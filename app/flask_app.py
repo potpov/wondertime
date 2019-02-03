@@ -7,6 +7,7 @@ from models import model
 from flask_restful import Api, Resource, reqparse
 from flask_webpack import Webpack
 import flask_project_config
+from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 from flask import request
 from werkzeug.http import parse_options_header
@@ -191,8 +192,9 @@ class LoadTimeline(Resource):
             return {'error': 'this timeline is not public.'}, status.HTTP_400_BAD_REQUEST
 
         #  collecting infos
-        medias = model.Media.query(ancestor=timeline.key).order(model.Media.sequence)
-        medias.filter(model.Media.active == True)
+        medias = model.Media.query(
+            ancestor=timeline.key
+        ).order(model.Media.sequence).filter(model.Media.active == True)
         result = []
         for media in medias:
             #  creating list of files for this media
@@ -208,7 +210,7 @@ class LoadTimeline(Resource):
             })
 
         if medias.count() > 0:
-            next_seq = medias.order(-model.Media.sequence).get().sequence + 1
+            next_seq = model.Media.query(ancestor=timeline.key).order(-model.Media.sequence).get().sequence + 1
         else:
             next_seq = 0
 
@@ -241,7 +243,13 @@ class UpdateTimeline(Resource):
         if timeline.key.parent() != user.key:  # problems with permissions
             return {'error', 'you dont  have permission to edit this file'}, status.HTTP_400_BAD_REQUEST
         # ready to go. let's begin from the files to be deleted
-
+        if args.to_be_removed:
+            remove_these = model.Media.query(
+                ancestor=timeline.key
+            ).filter(model.Media.sequence.IN(args.to_be_removed))
+            for remove_me in remove_these:
+                remove_me.active = False
+                remove_me.put()
         # adding new elements
         for card in args.items_tree:
             if card['new']:
@@ -279,8 +287,7 @@ class LoadTimelines(Resource):
 
         if isinstance(user, model.User):
             response = []
-            query = model.Timeline.query(ancestor=user.key)
-            query.filter(model.Timeline.active == True)
+            query = model.Timeline.query(ancestor=user.key).filter(model.Timeline.active == True)
             results = query.fetch()
             for result in results:
                 response.append({
@@ -303,15 +310,6 @@ class GetBlobEntry(Resource):
         return {'error': 'invalid request'}, status.HTTP_400_BAD_REQUEST
 
 
-class UploadHandler(Resource):
-    def post(self):
-        f = request.files['cover']
-        header = f.headers['Content-Type']
-        parsed_header = parse_options_header(header)
-        blob_key = parsed_header[1]['blob-key']
-        return blob_key
-
-
 api.add_resource(CreateUser, '/API/user/signup')
 api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
@@ -322,5 +320,4 @@ api.add_resource(UpdateTimeline, '/API/timeline/update')
 api.add_resource(LoadTimeline, '/API/timeline/load/<string:timeline_hash>')
 api.add_resource(LoadTimelines, '/API/timelines/load')
 api.add_resource(GetBlobEntry, '/API/blob/action/<string:action>')
-api.add_resource(UploadHandler, '/API/test')
 
