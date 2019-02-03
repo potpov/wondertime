@@ -1,0 +1,13 @@
+flask
+flask_wtf
+flask_restful
+requests
+requests_toolbelt
+flask_session
+PyJWT
+PyCrypto
+bcrypt
+pbkdf2
+flask_webpack
+flask_api
+werkzeug
