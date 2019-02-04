@@ -37,6 +37,10 @@ class Timeline extends React.Component {
     }
 
     componentDidMount() {
+        this.downloadTimeline();
+    }
+
+    downloadTimeline(){
         let headers = {
           "Content-Type": "application/json",
         };
@@ -182,6 +186,8 @@ class Timeline extends React.Component {
                             }
                         }
                     }.bind(this);
+                    //refresh timelines
+                    setTimeout( () => {this.downloadTimeline();}, 1500);
                 }, //handling errors if blob entry creation fails
                 (error) => {
                     this.setState({
