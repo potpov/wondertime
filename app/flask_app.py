@@ -54,7 +54,7 @@ class CreateUser(Resource):
         args = self.parser.parse_args()
         result = model.User.create_new_user(args.username, args.email, args.password)
         if 'error' in result:
-            return jsonify(result), status.HTTP_400_BAD_REQUEST
+            return make_response(jsonify(result), status.HTTP_400_BAD_REQUEST)
         return jsonify(result)
 
 
@@ -69,8 +69,8 @@ class LoginUser(Resource):
         args = self.parser.parse_args()
         result = model.User.login_user(args.username, args.password)
         if 'error' in result:
-            return jsonify(result), status.HTTP_400_BAD_REQUEST
-        return jsonify(result)
+            return make_response(jsonify(result), status.HTTP_400_BAD_REQUEST)
+        return make_response(jsonify(result), 200)
 
 
 class LoadUser(Resource):
@@ -86,7 +86,7 @@ class LoadUser(Resource):
         if isinstance(result, model.User):
             return jsonify({'user': result.username})
         if 'error' in result:
-            return jsonify(result), status.HTTP_403_FORBIDDEN
+            return make_response(jsonify(result), status.HTTP_403_FORBIDDEN)
         return {'error', 'unknown error here'}, status.HTTP_403_FORBIDDEN
 
 
@@ -132,7 +132,7 @@ class CreateTimeline(Resource):
             ).put()
             return {'success': 'timeline created'}
         else:
-            return user, status.HTTP_400_BAD_REQUEST  # error message here
+            return make_response(jsonify(user), status.HTTP_400_BAD_REQUEST)  # error message here
 
 
 class MakeTimelinePublic(Resource):
@@ -149,14 +149,14 @@ class MakeTimelinePublic(Resource):
         if isinstance(user, model.User):
             timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
             if not isinstance(timeline, model.Timeline):
-                return timeline, status.HTTP_400_BAD_REQUEST  # error here
+                return make_response(jsonify(timeline), status.HTTP_400_BAD_REQUEST)  # error here
             if timeline.key.parent() == user.key:  # check if the auth user is also admin for this timeline
                 timeline.is_public = True
                 timeline.put()
                 return {'success': 'timeline is now public'},
             else:
                 return {'error': 'permission denied'}, status.HTTP_400_BAD_REQUEST
-        return jsonify(user)
+        return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)
 
 
 class LoadTimeline(Resource):
@@ -171,7 +171,7 @@ class LoadTimeline(Resource):
         args = self.parser.parse_args()
         timeline = model.Timeline.load_timeline(entity_key=timeline_hash)
         if not isinstance(timeline, model.Timeline):
-            return timeline  # error here
+            return make_response(jsonify(timeline), status.HTTP_404_NOT_FOUND)  # error here
 
         #  auth part
         if not args.Authorization:
@@ -185,7 +185,7 @@ class LoadTimeline(Resource):
                 else:
                     is_admin = False
             else:
-                return jsonify(user)  # invalid user here
+                return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)  # invalid user here
 
         #  deny access to private timelines
         if not timeline.is_public and not is_admin:
@@ -235,11 +235,11 @@ class UpdateTimeline(Resource):
         # handling all possible errors first
         timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
         if not isinstance(timeline, model.Timeline):
-            return timeline  # problems with timelines
+            return make_response(jsonify(timeline), status.HTTP_404_NOT_FOUND)  # problems with timelines
         token = args.Authorization.split(" ")[1]
         user = model.User.load_user_by_token(token)
         if not isinstance(user, model.User):
-            return user  # problems with user
+            return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)  # problems with user
         if timeline.key.parent() != user.key:  # problems with permissions
             return {'error', 'you dont  have permission to edit this file'}, status.HTTP_400_BAD_REQUEST
         # ready to go. let's begin from the files to be deleted

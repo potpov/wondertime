@@ -144,9 +144,12 @@ class Timeline(ndb.Model):
         :param entity_key:
         :return: timeline entity | {error}
         """
-        timeline = ndb.Key(urlsafe=entity_key).get()
+        try:
+            timeline = ndb.Key(urlsafe=entity_key).get()
+        except TypeError:
+            return {'error': 'problem with this timeline. sure link is valid?'}
         if not timeline:
-            return {'error': 'timeline does not exists!'}
+            return {'error': 'timeline does not exist'}
         if not timeline.active:
             return {'error': 'timeline does not exist anymore!'}
         return timeline
