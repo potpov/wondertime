@@ -13,7 +13,6 @@ module.exports = {
       path: path.resolve("./assets/bundles/"),
       filename: "[name]-[hash].js",
       publicPath: 'http://localhost:8080/static/'
-      // publicPath: 'https://mangia.lattu.ga/static/'  uncomment this on deploy!
   },
 
   plugins: [

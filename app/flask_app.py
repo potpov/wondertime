@@ -84,7 +84,7 @@ class LoadUser(Resource):
         token = args.Authorization.split(" ")[1]
         result = model.User.load_user_by_token(token)
         if isinstance(result, model.User):
-            return {'user': result.username}
+            return jsonify({'user': result.username})
         if 'error' in result:
             return jsonify(result), status.HTTP_403_FORBIDDEN
         return {'error', 'unknown error here'}, status.HTTP_403_FORBIDDEN
