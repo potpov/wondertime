@@ -13,9 +13,9 @@ module.exports = {
   output: {
       path: path.resolve("./bundles/"),
       filename: "[name]-[hash].js",
-      publicPath: 'http://localhost:8080/static/'
+      //publicPath: 'http://localhost:8080/static/'
       // uncomment the next path on deploy!
-      // publicPath: 'https://mangia.lattu.ga/static/'
+      publicPath: 'https://mangia.lattu.ga/static/'
   },
 
   plugins: [
@@ -34,12 +34,10 @@ module.exports = {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
         use: ['babel-loader']
-      }, {
+      },
+        {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
-      },{
-        test: /\.(png|jpg|gif|mp4)$/,
-        use: ['url-loader']
       }
     ]
   },

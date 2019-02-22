@@ -28,7 +28,7 @@ class loginpage extends React.Component {
         return(
             <>
                 <div className="login-page"> </div>
-                <div className="row mr-0">
+                <div className="row mt-3 mr-0">
                     <div className="col"> </div>
                     <div className="card col-12 col-md-5 col-lg-5">
                         <div className="card-body">
