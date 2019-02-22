@@ -15,6 +15,7 @@
 
 node_modules/
 venv/
+app/static/
 
 # Python pycache:
 __pycache__/
