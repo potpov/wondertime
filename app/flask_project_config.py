@@ -14,5 +14,5 @@ CRYPT_LOG_ROUNDS = 13
 app_params = {
     'SECRET_KEY': SECRET_KEY,
     'DEBUG': DEBUG,
-    'WEBPACK_MANIFEST_PATH': '../build/manifest.json'
+    'WEBPACK_MANIFEST_PATH': '../manifest.json'
 }

@@ -12,6 +12,7 @@ from google.appengine.ext import blobstore
 from flask import request
 from werkzeug.http import parse_options_header
 import json
+from exceptions import InvalidUsage
 
 webpack = Webpack()
 app = Flask(__name__)
@@ -26,6 +27,13 @@ webpack.init_app(app)
 
 # Use the App Engine Requests adapter. This makes sure that Requests uses URLFetch.
 requests_toolbelt.adapters.appengine.monkeypatch()
+
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 
 @app.route("{}/<bkey>".format(flask_project_config.MEDIA_PUB_DIR))
@@ -53,8 +61,6 @@ class CreateUser(Resource):
     def post(self):
         args = self.parser.parse_args()
         result = model.User.create_new_user(args.username, args.email, args.password)
-        if 'error' in result:
-            return make_response(jsonify(result), status.HTTP_400_BAD_REQUEST)
         return jsonify(result)
 
 
@@ -68,8 +74,6 @@ class LoginUser(Resource):
     def post(self):
         args = self.parser.parse_args()
         result = model.User.login_user(args.username, args.password)
-        if 'error' in result:
-            return make_response(jsonify(result), status.HTTP_400_BAD_REQUEST)
         return make_response(jsonify(result), 200)
 
 
@@ -77,7 +81,13 @@ class LoadUser(Resource):
 
     def __init__(self):
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+        self.parser.add_argument(
+            'Authorization',
+            type=str,
+            location='headers',
+            required=True,
+            help='auth token required to view this page'
+        )
 
     def get(self):
         args = self.parser.parse_args()
@@ -85,9 +95,7 @@ class LoadUser(Resource):
         result = model.User.load_user_by_token(token)
         if isinstance(result, model.User):
             return jsonify({'user': result.username})
-        if 'error' in result:
-            return make_response(jsonify(result), status.HTTP_403_FORBIDDEN)
-        return {'error', 'unknown error here'}, status.HTTP_403_FORBIDDEN
+        raise InvalidUsage('unable to obtain user')
 
 
 class LogoutUser(Resource):
@@ -102,8 +110,8 @@ class LogoutUser(Resource):
         result = model.User.load_user_by_token(token)  # just checking there's a token to invalidate
         if isinstance(result, model.User):
             model.Blacklist(token=token).put()
-            return {'message': 'user logged out successfully'}, status.HTTP_204_NO_CONTENT
-        return {'error': 'it is impossible to logout the user.'}, status.HTTP_400_BAD_REQUEST
+            return {'message': 'user logged out successfully'}
+        raise InvalidUsage('unable to logout user.')
 
 
 class CreateTimeline(Resource):
@@ -118,21 +126,20 @@ class CreateTimeline(Resource):
         args = self.parser.parse_args()
         token = args.Authorization.split(" ")[1]
         user = model.User.load_user_by_token(token)
-        if isinstance(user, model.User):
-            # getting blob instance
-            f = request.files['cover']
-            cover_header = f.headers['Content-Type']
-            parsed_header = parse_options_header(cover_header)
-            blob_key = parsed_header[1]['blob-key']
-            # creating the timeline
-            model.Timeline(
-                parent=user.key,
-                title=args.title,
-                cover_url=blobstore.BlobKey(blob_key)
-            ).put()
-            return {'success': 'timeline created'}
-        else:
-            return make_response(jsonify(user), status.HTTP_400_BAD_REQUEST)  # error message here
+        if not isinstance(user, model.User):
+            raise InvalidUsage('unable to obtain user')
+        # getting blob instance
+        f = request.files['cover']
+        cover_header = f.headers['Content-Type']
+        parsed_header = parse_options_header(cover_header)
+        blob_key = parsed_header[1]['blob-key']
+        # creating the timeline
+        model.Timeline(
+            parent=user.key,
+            title=args.title,
+            cover_url=blobstore.BlobKey(blob_key)
+        ).put()
+        return {'success': 'timeline created'}
 
 
 class MakeTimelinePublic(Resource):
@@ -146,17 +153,17 @@ class MakeTimelinePublic(Resource):
         args = self.parser.parse_args()
         token = args.Authorization.split(" ")[1]
         user = model.User.load_user_by_token(token)
-        if isinstance(user, model.User):
-            timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
-            if not isinstance(timeline, model.Timeline):
-                return make_response(jsonify(timeline), status.HTTP_400_BAD_REQUEST)  # error here
-            if timeline.key.parent() == user.key:  # check if the auth user is also admin for this timeline
-                timeline.is_public = True
-                timeline.put()
-                return {'success': 'timeline is now public'},
-            else:
-                return {'error': 'permission denied'}, status.HTTP_400_BAD_REQUEST
-        return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)
+        if not isinstance(user, model.User):
+            raise InvalidUsage('unable to obtain user')
+        timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
+        if not isinstance(timeline, model.Timeline):
+            raise InvalidUsage('unable to obtain timeline')
+        if timeline.key.parent() == user.key:  # check if the auth user is also admin for this timeline
+            timeline.is_public = True
+            timeline.put()
+            return {'message': 'timeline is now public'},
+        else:
+            raise InvalidUsage('permission denied')
 
 
 class LoadTimeline(Resource):
@@ -167,12 +174,11 @@ class LoadTimeline(Resource):
 
     def get(self, timeline_hash):
         if not timeline_hash:
-            return {'error': 'no timeline specified'}, status.HTTP_400_BAD_REQUEST
+            raise InvalidUsage('no timeline specified')
         args = self.parser.parse_args()
         timeline = model.Timeline.load_timeline(entity_key=timeline_hash)
         if not isinstance(timeline, model.Timeline):
-            return make_response(jsonify(timeline), status.HTTP_404_NOT_FOUND)  # error here
-
+            raise InvalidUsage('unable to obtain timeline')
         #  auth part
         if not args.Authorization:
             is_admin = False
@@ -185,11 +191,11 @@ class LoadTimeline(Resource):
                 else:
                     is_admin = False
             else:
-                return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)  # invalid user here
+                raise InvalidUsage('unable to obtain user')
 
         #  deny access to private timelines
         if not timeline.is_public and not is_admin:
-            return {'error': 'this timeline is not public.'}, status.HTTP_400_BAD_REQUEST
+            raise InvalidUsage('this timeline is not public')
 
         #  collecting infos
         medias = model.Media.query(
@@ -235,13 +241,13 @@ class UpdateTimeline(Resource):
         # handling all possible errors first
         timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
         if not isinstance(timeline, model.Timeline):
-            return make_response(jsonify(timeline), status.HTTP_404_NOT_FOUND)  # problems with timelines
+            raise InvalidUsage('unable to obtain timeline')
         token = args.Authorization.split(" ")[1]
         user = model.User.load_user_by_token(token)
         if not isinstance(user, model.User):
-            return make_response(jsonify(user), status.HTTP_403_FORBIDDEN)  # problems with user
+            raise InvalidUsage('unable to obtain user')
         if timeline.key.parent() != user.key:  # problems with permissions
-            return {'error', 'you dont  have permission to edit this file'}, status.HTTP_400_BAD_REQUEST
+            raise InvalidUsage('you are not allowed to edit this timeline')
         # ready to go. let's begin from the files to be deleted
         if args.to_be_removed:
             remove_these = model.Media.query(
@@ -298,7 +304,7 @@ class LoadTimelines(Resource):
                     'isPublic': result.is_public
                 })
             return jsonify(response)
-        return jsonify(user)  # error message here
+        raise InvalidUsage('unable to obtain user')  # error message here
 
 
 class GetBlobEntry(Resource):
@@ -307,7 +313,7 @@ class GetBlobEntry(Resource):
             return {'url': blobstore.create_upload_url('/API/timeline/create')}
         if action == 'update':
             return {'url': blobstore.create_upload_url('/API/timeline/update')}
-        return {'error': 'invalid request'}, status.HTTP_400_BAD_REQUEST
+        raise InvalidUsage('invalid request')
 
 
 api.add_resource(CreateUser, '/API/user/signup')

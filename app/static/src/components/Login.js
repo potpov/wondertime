@@ -1,9 +1,4 @@
 import React, {Component} from "react";
-import {connect} from "react-redux";
-
-import {Link, Redirect} from "react-router-dom";
-import {auth} from "../actions";
-
 import css from '../css/loginPage.css'
 
 class Login extends Component {
@@ -15,7 +10,7 @@ class Login extends Component {
 
     onLogin = e => {
         e.preventDefault();
-        this.props.login(this.state.username, this.state.password);
+        this.props.signIn(this.state.username, this.state.password); // handled by App
     };
 
     componentDidMount(){
@@ -23,10 +18,6 @@ class Login extends Component {
     }
 
   render() {
-
-    if (this.props.isAuthenticated) {
-        return <Redirect to="/experiences" />
-    }
 
     return (
           <form onSubmit={this.onLogin}>
@@ -50,35 +41,14 @@ class Login extends Component {
                   />
               </div>
               <button type="submit" className="btn btn-primary btn-raised w-100">Login</button>
-              {this.props.errors.length > 0 && (
-                <div className="alert alert-warning mb-0" role="alert">
-                  {this.props.errors[0].message}
-                </div>
-            )}
+              <div className="alert alert-light" role="alert">
+                  don't you have an account?
+                  <a href="#" onClick={this.props.switch} className="ml-1 alert-link">sign up!</a>
+              </div>
           </form>
     )
   }
 }
 
-const mapStateToProps = state => {
-  let errors = [];
-  if (state.auth.errors) {
-    errors = Object.keys(state.auth.errors).map(field => {
-      return {field, message: state.auth.errors[field]};
-    });
-  }
-  return {
-    errors,
-    isAuthenticated: state.auth.isAuthenticated
-  };
-};
 
-const mapDispatchToProps = dispatch => {
-  return {
-    login: (username, password) => {
-      return dispatch(auth.login(username, password));
-    }
-  };
-};
-
-export default connect(mapStateToProps, mapDispatchToProps)(Login);
+export default Login;

@@ -1,9 +1,6 @@
 import React, {Component} from "react";
-import {connect} from "react-redux";
 
-import {Link, Redirect} from "react-router-dom";
-
-import {auth} from "../actions";
+import {Redirect} from "react-router-dom";
 
 class Register extends Component {
 
@@ -15,11 +12,11 @@ class Register extends Component {
 
   onRegister = e => {
     e.preventDefault();
-    this.props.register(this.state.username, this.state.password, this.state.email);
+    this.props.signUp(this.state.username, this.state.password, this.state.email);
   };
 
   render() {
-    if (this.props.isAuthenticated) {
+    if (this.props.isAuth) {
       return <Redirect to="/" />
     }
     return (
@@ -53,33 +50,13 @@ class Register extends Component {
                       <span className="bmd-help">We'll never share your email with anyone else.</span>
               </div>
               <button type="submit" className="btn btn-primary btn-raised w-100">Sign up</button>
-              {this.props.errors.length > 0 && (
-                <div className="alert alert-warning mb-0" role="alert">
-                  {this.props.errors[0].field}: {this.props.errors[0].message}
-                </div>
-            )}
+              <div className="alert alert-light" role="alert">
+                  already have an account?
+                  <a href="#" onClick={this.props.switch} className="ml-1 alert-link">sign in!</a>
+              </div>
           </form>
     )
   }
 }
 
-const mapStateToProps = state => {
-  let errors = [];
-  if (state.auth.errors) {
-    errors = Object.keys(state.auth.errors).map(field => {
-      return {field, message: state.auth.errors[field]};
-    });
-  }
-  return {
-    errors,
-    isAuthenticated: state.auth.isAuthenticated
-  };
-};
-
-const mapDispatchToProps = dispatch => {
-  return {
-    register: (username, password, email) => dispatch(auth.register(username, password, email)),
-  };
-};
-
-export default connect(mapStateToProps, mapDispatchToProps)(Register);
+export default Register;

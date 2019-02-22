@@ -1,12 +1,9 @@
 import React from 'react';
 
-import {connect} from "react-redux";
-
 import * as Editor from "./CardEditor"
 import * as Cards from "./Types"
 import * as Messages from "./Messages"
 
-import Navbar from "./Navbar"
 import css from "../css/timeline.css";
 
 import FadeIn from 'react-fade-in';
@@ -18,8 +15,6 @@ class Timeline extends React.Component {
         super(props);
         this.state = {
             status: 'LOADING',
-            errors: null,
-            messages: null,
             isAdmin: false, // should we load the editor part of the timeline?
             placehit: '', // avoid editors to type a new place is it's te same of the previous one added
             nextSeq: 0,
@@ -29,15 +24,14 @@ class Timeline extends React.Component {
         };
     }
 
-    resetMessages(){
-        this.setState({
-            messages: null,
-            errors: null,
-        });
-    }
-
     componentDidMount() {
         this.downloadTimeline();
+    }
+
+    handleErrors(result) {
+        if(result.error)
+            throw result.error;
+        return result;
     }
 
     downloadTimeline(){
@@ -49,7 +43,8 @@ class Timeline extends React.Component {
           headers["Authorization"] = `Token ${this.props.token}`;
         }
         fetch('/API/timeline/load/' + this.props.match.params.id, {headers, })
-            .then(res => res.json())
+            .then(response => response.json())
+            .then(this.handleErrors)
             .then(
                 (result) => {
                     this.setState({
@@ -57,16 +52,12 @@ class Timeline extends React.Component {
                         items: result.media,
                         nextSeq: result.nextSeq,
                         isAdmin: result.admin,
-                        messages: result.message
-                    });
-                },
-                (error) => {
-                    this.setState({
-                        status: 'ERROR',
-                        errors: error
                     });
                 }
-            );
+            ).catch((error) => {
+                this.props.raiseError(error);
+        });
+        this.setState({status: 'LOADED'});
     }
 
     removeItem(i, seqNumber){
@@ -124,7 +115,7 @@ class Timeline extends React.Component {
                 localurl = item.src; // just a blob for the user.
                 break;
             default:
-                console.log("error, unknown type/status");
+                this.props.raiseError('unknown type/status');
                 return;
         }
         //saving data
@@ -174,25 +165,24 @@ class Timeline extends React.Component {
                     // Send our FormData object; HTTP headers are set automatically
                     request.send(formdata);
 
-                    // Define what happens on response
+                    // show logs on response
                     request.onload = function (e) {
                         if (request.readyState === 4) {
                             if (request.status === 200) {
                                 let json_obj = JSON.parse(request.responseText);
-                                this.setState({messages: json_obj['message'], errors: json_obj['error']});
+                                if(json_obj['message'])
+                                    this.props.raiseMessage(json_obj['message']);
+                                else if(json_obj['error'])
+                                    this.props.raiseError(json_obj['error']);
+
                             }
                             else {
-                                console.error(request.statusText);
+                                this.props.raiseError(request.statusText);
                             }
                         }
                     }.bind(this);
                     //refresh timelines
                     setTimeout( () => {this.downloadTimeline();}, 1500);
-                }, //handling errors if blob entry creation fails
-                (error) => {
-                    this.setState({
-                        errors: error
-                    });
                 }
             );
     }
@@ -251,10 +241,10 @@ class Timeline extends React.Component {
         if(this.state.items.length > 0) {
             let timeline = this.state.items.map((media, index) => this.componentFactory(media, index, this.state.isAdmin));
             return(
-                <div>
+                <>
                     {timeline}
                     {this.renderSaverEditor()}
-                </div>
+                </>
             );
         }
         else
@@ -262,46 +252,27 @@ class Timeline extends React.Component {
     }
 
     render() {
-        const {errors, messages, items, isAdmin, status} = this.state;
+        const {status} = this.state;
 
         switch(status){
             case 'LOADING':
-                return (
-                    <div>
-                        <Navbar homepage/>
-                        <Messages.Spinner/>
-                    </div>
-                );
+                return (<Messages.Spinner/>);
+
             case 'LOADED':
                 return (
-                    <div>
-                        <Navbar homepage/>
-                        <Messages.Banner messages={messages} errors={errors} onReset={this.resetMessages.bind(this)}/>
+                    <>
                         <FadeIn>
                             <div className="container mb-5 timeline">
                                 {this.renderTimeline()}
                             </div>
                         </FadeIn>
                         {this.renderAdderEditor()}
-                    </div>
+                    </>
                 );
-            case 'ERROR':
-            default:
-                return (
-                    <div>
-                        <Navbar homepage/>
-                        <Messages.Banner messages={messages} errors={errors} onReset={this.resetMessages.bind(this)}/>
-                    </div>);
         }
     }
 
 }
 
-const mapStateToProps = state => {
-  return {
-    token: state.auth.token,
-  };
-};
 
-
-export default connect(mapStateToProps, null)(Timeline);
+export default Timeline;

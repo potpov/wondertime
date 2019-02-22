@@ -4,6 +4,7 @@ import jwt
 import re
 import pbkdf2
 import app.flask_project_config as config
+from app.exceptions import InvalidUsage
 
 CARD_OPTIONS = ('video', 'picture', 'caption', 'gallery')
 
@@ -44,12 +45,12 @@ class User(ndb.Model):
             payload = jwt.decode(auth_token, config.SECRET_KEY)
             blacklisted = Blacklist.query(Blacklist.token == auth_token).get()
             if blacklisted:
-                return {'error': 'This token is not valid anymore'}
+                raise InvalidUsage('This token is not valid anymore')
             return {'username': payload['sub']}
         except jwt.ExpiredSignatureError:
-            return {'error': 'Signature expired. Please log in again.'}
+            raise InvalidUsage('Signature expired. Please log in again')
         except jwt.InvalidTokenError:
-            return {'error': 'Invalid token. Please log in again.'}
+            raise InvalidUsage('Invalid token. Please log in again')
 
     @staticmethod
     def validate_new_email(email):
@@ -73,9 +74,9 @@ class User(ndb.Model):
         :return: Json Object {username, token}| {error}
         """
         if not User.validate_new_email(email):
-            return {'error': 'email already exists or not valid'},
+            raise InvalidUsage('email already exists or not valid')
         if User.get_by_id(username) is not None:
-            return {'error': 'username already exists'}
+            raise InvalidUsage('username already exists')
 
         key = ndb.Key(User, username)
         new_user = User(
@@ -99,11 +100,15 @@ class User(ndb.Model):
         :param password:
         :return: Json Object {username, token} | {error}
         """
+
+        if not username or not password:
+            raise InvalidUsage('missing required parameters')
+
         user = ndb.Key(User, username).get()
         if not user:
-            return {'error': 'user not exists, signin now!'}
+            raise InvalidUsage('user does not exist, sign in now!')
         if user.password != pbkdf2.crypt(password, user.password, iterations=config.CRYPT_LOG_ROUNDS):
-            return {'error': 'wrong password'}
+            raise InvalidUsage('wrong password')
 
         token = user.encode_auth_token()
         return {
@@ -119,12 +124,10 @@ class User(ndb.Model):
         :return: User object | {error}
         """
         token = User.decode_auth_token(token)
-        if 'error' in token:
-            return token
         user = User.get_by_id(token['username'])
         if user is not None:
             return user
-        return {'error': 'this user does not exist anymore'}
+        raise InvalidUsage('this user does not exist anymore')
 
 
 class Timeline(ndb.Model):
@@ -136,7 +139,6 @@ class Timeline(ndb.Model):
     cover_url = ndb.BlobKeyProperty()
     active = ndb.BooleanProperty(default=True)
 
-
     @staticmethod
     def load_timeline(entity_key):
         """
@@ -147,11 +149,11 @@ class Timeline(ndb.Model):
         try:
             timeline = ndb.Key(urlsafe=entity_key).get()
         except TypeError:
-            return {'error': 'problem with this timeline. sure link is valid?'}
+            return {'error': 'problem with this timeline. sure this link is valid?'}
         if not timeline:
-            return {'error': 'timeline does not exist'}
+            raise InvalidUsage('timeline does not exist')
         if not timeline.active:
-            return {'error': 'timeline does not exist anymore!'}
+            raise InvalidUsage('timeline does not exist anymore')
         return timeline
 
 

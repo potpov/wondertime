@@ -1,8 +1,6 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
+import {Link, Redirect} from 'react-router-dom';
 
-import connect from "react-redux/es/connect/connect";
-import Navbar from "./Navbar";
 import Adder from "./TimelineEditor/Adder";
 import Share from "./Share";
 import * as Messages from "./Messages";
@@ -14,57 +12,58 @@ class Userspace extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            status: 'LOADING',
-            errors: this.props.errors,
-            messages: this.props.messages,
             timelines: null,
         };
-    }
-
-    resetMessages(){
-        this.setState({
-            messages: null,
-            errors: null,
-        });
     }
 
     componentDidMount() {
         this.downloadTimelines();
     }
 
+    handleErrors(result) {
+        if(result.error)
+            throw result.error;
+        return result;
+    }
+
     downloadTimelines(){
-        this.setState({status: 'LOADING' });
-        let headers = {"Content-Type": "application/json"};
-        if (this.props.token) {
-          headers["Authorization"] = `Token ${this.props.token}`;
+
+        if (!this.props.isAuth || !this.props.token) {
+            return;
         }
 
-        fetch("/API/timelines/load", {headers, })
+        this.setState({status: 'LOADING' });
+        let headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Token ${this.props.token}`,
+        };
+
+        return fetch("/API/timelines/load", {headers, })
             .then(res => res.json())
+            .then(this.handleErrors)
             .then(
                 (result) => {
                     this.setState({
                         status: 'LOADED',
-                        timelines: result
-                    });
-                },
-                (error) => {
-                    this.setState({
-                        status: 'ERROR',
-                        errors: error
+                        timelines: result,
                     });
                 }
-            );
+            ).catch((error) => {
+                this.setState({status: 'LOADED'});
+                this.props.raiseError(error);
+        });
+
     }
 
     createTimeline(timeline){
         if(timeline.title == null || timeline.cover == null){
-            this.setState({errors: 'missing parameters'});
+            this.props.raiseError('select image and title for a new timeline');
             return;
         }
 
         fetch("/API/blob/action/create")
             .then(res => res.json())
+            .then(this.handleErrors)
             .then(
                 (blobURL) => {
                     var request = new XMLHttpRequest();
@@ -79,20 +78,21 @@ class Userspace extends React.Component {
                         if (request.readyState === 4) {
                             if (request.status === 200) {
                                 let json_obj = JSON.parse(request.responseText);
-                                this.setState({messages: json_obj['message'], errors: json_obj['error']});
+                                if(json_obj['message'])
+                                    this.props.raiseMessage(json_obj['message']);
+                                else if(json_obj['error'])
+                                    this.props.raiseError(json_obj['error']);
                             }
+                            else
+                                this.props.raiseError(request.statusText);
                         }
                     }.bind(this);
                     //refresh timelines
                     setTimeout( () => {this.downloadTimelines();}, 1000);
-                //error: blob not created
-                },
-                (error) => {
-                    this.setState({
-                        errors: error
-                    });
                 }
-            );
+            ).catch((error) => {
+                this.props.raiseError(error);
+        });
     }
 
     instaShare(cover, caption){
@@ -109,28 +109,21 @@ class Userspace extends React.Component {
 
         fetch("/API/timeline/publish", {headers, body, method: "POST"})
             .then(res => res.json())
+            .then(this.handleErrors)
             .then(
                 (result) => {
-                    this.setState({
-                        //not going to set status loaded because we will refresh the page soon
-                        messages: result.success
-                    });
-                    //refresh
+                    this.props.raiseMessage(result.message);
+                    // refresh
                     setTimeout( () => {this.downloadTimelines();}, 1000);
-                },
-                (error) => {
-                    this.setState({
-                        status: 'ERROR',
-                        errors: error
-                    });
                 }
-            );
+            ).catch((error) => {
+                this.props.raiseError(error);
+        });
     }
 
     renderCard(timeline) {
         return (
             <div key={timeline.hash} className="mt-4 col-sm-6 col-md-4 col-lg-3">
-
                 <FadeIn>
                 <div className="card">
                     <img className="card-img-top" src={timeline.cover_url} alt="Card image cap"/>
@@ -154,14 +147,13 @@ class Userspace extends React.Component {
     }
 
     render(){
-        const {errors, messages, timelines, status} = this.state;
+        const {timelines, status} = this.state;
+
+        // check is user has permissions for this page
+        if (!this.props.isAuth && status !== 'LOADING')
+            return <Redirect to="/login"/>;
+
         switch(status){
-            case 'LOADING':
-                return (
-                    <div>
-                        <Messages.Spinner/>
-                    </div>
-                );
 
             case 'LOADED':
                 let cards;
@@ -171,30 +163,22 @@ class Userspace extends React.Component {
                     cards = <Messages.Empty/>;
 
                 return(
-                <div>
-                    <Navbar homepage/>
-                    <div className="container-fluid">
-                        <div className="row">
-                            {cards}
+                    <>
+                        <div className="container-fluid">
+                            <div className="row">
+                                {cards}
+                            </div>
                         </div>
-                    </div>
-                    <Messages.Banner messages={messages} errors={errors} onReset={this.resetMessages.bind(this)}/>
-                    <Adder onSave={this.createTimeline.bind(this)}/>
-                </div>
+                        <Adder onSave={this.createTimeline.bind(this)}/>
+                    </>
                 );
 
-            case 'ERROR':
+            case 'LOADING':
             default:
-                return <div>error: {errors}</div>;
+                return (<Messages.Spinner/>);
         }
     }
 }
 
-const mapStateToProps = state => {
-  return {
-    token: state.auth.token,
-  };
-};
 
-
-export default connect(mapStateToProps, null)(Userspace);
+export default Userspace;

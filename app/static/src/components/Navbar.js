@@ -1,7 +1,5 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
-import {auth} from "../actions";
-import connect from "react-redux/es/connect/connect";
 
 class Navbar extends React.Component {
 
@@ -9,7 +7,7 @@ class Navbar extends React.Component {
         return(
             <div>
                 <li className="nav-item">
-                    <Link to={'/'} className="nav-link" onClick={this.props.logout}>Logout</Link>
+                    <Link to={'/'} className="nav-link" onClick={this.props.signOut}>Logout</Link>
                 </li>
             </div>
         );
@@ -24,15 +22,10 @@ class Navbar extends React.Component {
     }
 
     render(){
-        let additionalPart = '';
-        if(!this.props.user.isAuthenticated)
-            additionalPart = this.guestPart();
-        else
-            additionalPart = this.loggedPart();
 
         return(
             <nav className="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
-                <Link to={'/'} className={'navbar-brand ' + this.props.homepage}>MyTrip</Link>
+                <Link to={'/'} className={'navbar-brand active'}>MyTrip</Link>
 
                 <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
                         aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,9 +35,9 @@ class Navbar extends React.Component {
                 <div className="navbar-collapse collapse" id="navbarColor01">
                     <ul className="navbar-nav mr-auto">
                         <li className="nav-item">
-                            <Link to={'/about'} className={'nav-link ' + this.props.about}>about us</Link>
+                            <Link to={'/about'} className={'nav-link'}>about us</Link>
                         </li>
-                        {additionalPart}
+                        { this.props.isAuth ? this.loggedPart() : this.guestPart() }
                     </ul>
                     <form className="form-inline">
                         <span className="bmd-form-group">
@@ -58,23 +51,5 @@ class Navbar extends React.Component {
     }
 }
 
-Navbar.defaultProps = {
-    homepage: '',
-    timeline: '',
-    about: '',
-};
-
-const mapStateToProps = state => {
-  return {
-    user: state.auth,
-  }
-};
-
-const mapDispatchToProps = dispatch => {
-  return {
-    logout: () => dispatch(auth.logout()),
-  }
-};
-
-export default connect(mapStateToProps, mapDispatchToProps)(Navbar);
+export default Navbar;
 

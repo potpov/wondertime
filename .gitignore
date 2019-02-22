@@ -13,3 +13,5 @@ assets/bundles/
 \.idea/
 
 build/manifest\.json
+
+bundles/
