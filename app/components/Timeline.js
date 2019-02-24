@@ -1,7 +1,7 @@
 import React from 'react';
 
-import * as Editor from "./CardEditor"
-import * as Cards from "./Types"
+import * as Editor from "./Editor/Card"
+import * as Cards from "./Cards"
 import * as Messages from "./Messages"
 
 import FadeIn from 'react-fade-in';

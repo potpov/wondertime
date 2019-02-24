@@ -7,7 +7,7 @@ import { instanceOf } from 'prop-types';
 import Userspace from "./Userspace";
 import * as Messages from "./Messages"
 import Welcome from "./Welcome"
-import Loginpage from "./Loginpage"
+import Access from "./Access/Access"
 import Timeline from "./Timeline";
 import Navbar from "./Navbar";
 
@@ -191,7 +191,7 @@ class App extends React.Component {
 
                         <RouteWithProps
                             exact path="/login"
-                            component={Loginpage}
+                            component={Access}
                             isAuth={isAuth}
                             signIn={this.signIn.bind(this)}
                             signUp={this.signUp.bind(this)}

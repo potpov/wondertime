@@ -1,7 +1,7 @@
 import React from 'react';
 import {Link, Redirect} from 'react-router-dom';
 
-import Adder from "./TimelineEditor/Adder";
+import Adder from "./Editor/Timeline/Adder";
 import Share from "./Share";
 import * as Messages from "./Messages";
 

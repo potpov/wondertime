@@ -3,7 +3,7 @@ import {Redirect} from 'react-router-dom';
 import Login from "./Login";
 import Register from "./Register";
 
-class loginpage extends React.Component {
+class access extends React.Component {
 
     constructor(props){
         super(props);
@@ -55,5 +55,5 @@ class loginpage extends React.Component {
     }
 }
 
-export default loginpage;
+export default access;
 
