@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Route } from "react-router-dom";
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
-import css from "../css/style.css";
-
 /* web components */
 import Userspace from "./Userspace";
 import * as Messages from "./Messages"

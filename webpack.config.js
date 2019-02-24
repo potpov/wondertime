@@ -2,7 +2,7 @@ var path = require("path");
 var webpack = require('webpack');
 var ManifestRevisionPlugin = require('manifest-revision-webpack-plugin');
 
-var rootAssetPath = './app/static/src/index';
+var rootAssetPath = './app/components/Index.js';
 
 
 module.exports = {
@@ -11,11 +11,11 @@ module.exports = {
   entry: rootAssetPath,
 
   output: {
-      path: path.resolve("./bundles/"),
+      path: path.resolve("./static/bundles/"),
       filename: "[name]-[hash].js",
-      //publicPath: 'http://localhost:8080/static/'
+      publicPath: 'http://localhost:8080/static/bundles/'
       // uncomment the next path on deploy!
-      publicPath: 'https://mangia.lattu.ga/static/'
+      //publicPath: 'https://mangia.lattu.ga/static/bundles/'
   },
 
   plugins: [
@@ -34,10 +34,6 @@ module.exports = {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
         use: ['babel-loader']
-      },
-        {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
       }
     ]
   },

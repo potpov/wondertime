@@ -4,8 +4,6 @@ import * as Editor from "./CardEditor"
 import * as Cards from "./Types"
 import * as Messages from "./Messages"
 
-import css from "../css/timeline.css";
-
 import FadeIn from 'react-fade-in';
 
 /* this timeline handle timelines previews and editors */

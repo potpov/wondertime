@@ -1,6 +1,5 @@
 import React from 'react';
 
-import css from "../css/backgroundVideo.css"
 import {Link, Redirect} from "react-router-dom";
 
 class Welcome extends React.Component {
@@ -14,7 +13,7 @@ class Welcome extends React.Component {
             <>
                 <div className="video-container">
                     <video autoPlay muted loop className="videoPlayer">
-                        <source src="https://storage.cloud.google.com/wondertime_media/background2.mp4" type="video/mp4"/>
+                        <source src="/static/assets/homepage_bg.mp4" type="video/mp4"/>
                     </video>
                 </div>
                 <h1 className="mt-5 ml-3">there's a fancy world out there.<br/>
