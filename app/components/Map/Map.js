@@ -35,7 +35,7 @@ class Map extends React.Component {
             let marker = new google.maps.Marker({
                 position: coord,
                 map: map,
-                url: (timeline_hash + '#' + index)});
+                url: ('/timeline/' + timeline_hash + '/' + coord.lat + coord.lng)});
             google.maps.event.addListener(marker, 'click', function() {
                     window.location.href = this.url;
             });

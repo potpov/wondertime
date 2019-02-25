@@ -206,6 +206,10 @@ class LoadTimeline(Resource):
                 'sequence': media.sequence,
                 'type': media.type,
                 'caption': media.caption,
+                'coords': {
+                    'lat': media.location.lat,
+                    'lng': media.location.lon,
+                },
                 'url': files,
             })
 

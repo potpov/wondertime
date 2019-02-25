@@ -18,7 +18,7 @@ class Picture extends React.Component {
 
     render(){
         return(
-            <div className="card mt-5 w-50 mx-auto">
+            <div id={this.props.card_focus} className="card mt-5 w-50 mx-auto">
                 {this.Editor()}
                 <img className="card-img-top" src={this.urlRender()}
                      alt="Card image cap"/>

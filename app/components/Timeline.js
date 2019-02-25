@@ -18,7 +18,7 @@ class Timeline extends React.Component {
             nextSeq: 0,
             items: [], // list of current items without files
             toBeRemoved: [], // sequence number of files to be removed
-            mediasource: [] // files linked to the items with an unique hash
+            mediasource: [], // files linked to the items with an unique hash
         };
     }
 
@@ -51,6 +51,8 @@ class Timeline extends React.Component {
                         nextSeq: result.nextSeq,
                         isAdmin: result.admin,
                     });
+                    if(this.props.match.params.marker)
+                        document.getElementById(this.props.match.params.marker).scrollIntoView();
                 }
             ).catch((error) => {
                 this.props.raiseError(error);
@@ -186,12 +188,18 @@ class Timeline extends React.Component {
     }
 
     componentFactory(data, index, editor=false) {
+        // creating a reference if user comes here by clicking on marker on userspace
+        let card_focus = '';
+        if(data.coords)
+            card_focus = '' + data.coords.lat + data.coords.lng;
+
         switch (data.type) {
             case 'video':
                 return <Cards.Video
                     key={data.sequence}
                     url={data.url}
                     caption={data.caption}
+                    card_focus={card_focus}
                     editor={editor}>
                     <Editor.Deleter onDelete={this.removeItem.bind(this, index, data.sequence)}/>
                 </Cards.Video>;
@@ -200,6 +208,7 @@ class Timeline extends React.Component {
                     key={data.sequence}
                     url={data.url}
                     caption={data.caption}
+                    card_focus={card_focus}
                     editor={editor}>
                      <Editor.Deleter onDelete={this.removeItem.bind(this, index, data.sequence)}/>
                 </Cards.Picture>;
@@ -209,6 +218,7 @@ class Timeline extends React.Component {
                     urls={data.url}
                     sequence={data.sequence}
                     caption={data.caption}
+                    card_focus={card_focus}
                     editor={editor}>
                     <Editor.Deleter onDelete={this.removeItem.bind(this, index, data.sequence)}/>
                 </Cards.Gallery>;
@@ -217,6 +227,7 @@ class Timeline extends React.Component {
                     key={data.sequence}
                     includeHeader
                     caption={data.caption}
+                    card_focus={card_focus}
                     editor={editor}>
                     <Editor.Deleter onDelete={this.removeItem.bind(this, index, data.sequence)}/>
                 </Cards.Caption>;

@@ -19,7 +19,7 @@ class Video extends React.Component {
 
     render(){
         return(
-            <div className="card mt-5 w-50 mx-auto">
+            <div id={this.props.card_focus} className="card mt-5 w-50 mx-auto">
                 {this.Editor()}
                 <video width="100%" height="100%" controls>
                   <source src={this.urlRender()} type="video/mp4"/>
