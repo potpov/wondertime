@@ -10,7 +10,7 @@ import Welcome from "./Welcome"
 import Access from "./Access/Access"
 import Timeline from "./Timeline";
 import Navbar from "./Navbar";
-
+import Map from "./Map/Map";
 
 const RouteWithProps = ({ path, exact, component:Component, ...rest }) => (
   <Route
@@ -19,6 +19,13 @@ const RouteWithProps = ({ path, exact, component:Component, ...rest }) => (
     render={(props) => <Component {...props} {...rest} />}
     />
 );
+
+const coords = [
+    {lat: 37.772, lng: -122.214},
+    {lat: 21.291, lng: -157.821},
+    {lat: -18.142, lng: 178.431},
+    {lat: -27.467, lng: 153.027}
+];
 
 class App extends React.Component {
 

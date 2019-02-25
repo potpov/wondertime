@@ -6,6 +6,7 @@ import Share from "./Share";
 import * as Messages from "./Messages";
 
 import FadeIn from 'react-fade-in';
+import Map from "./Map/Map";
 
 class Userspace extends React.Component {
 
@@ -56,43 +57,31 @@ class Userspace extends React.Component {
     }
 
     createTimeline(timeline){
-        if(timeline.title == null || timeline.cover == null){
-            this.props.raiseError('select image and title for a new timeline');
+        if(timeline.title == null){
+            this.props.raiseError('select title for a new timeline');
             return;
         }
 
-        fetch("/API/blob/action/create")
-            .then(res => res.json())
-            .then(this.handleErrors)
-            .then(
-                (blobURL) => {
-                    var request = new XMLHttpRequest();
-                    var formdata  = new FormData();
-                    formdata.append('title', timeline.title);
-                    formdata.append('cover', timeline.cover);
-                    request.open('POST', blobURL.url);
-                    request.setRequestHeader("Authorization", "Token " + this.props.token);
-                    request.send(formdata);
-                    //creating a function to display message to user
-                    request.onload = function (e) {
-                        if (request.readyState === 4) {
-                            if (request.status === 200) {
-                                let json_obj = JSON.parse(request.responseText);
-                                if(json_obj['message'])
-                                    this.props.raiseMessage(json_obj['message']);
-                                else if(json_obj['error'])
-                                    this.props.raiseError(json_obj['error']);
-                            }
-                            else
-                                this.props.raiseError(request.statusText);
-                        }
-                    }.bind(this);
-                    //refresh timelines
-                    setTimeout( () => {this.downloadTimelines();}, 1000);
-                }
-            ).catch((error) => {
-                this.props.raiseError(error);
+        let headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Token ${this.props.token}`,
+        };
+        let body = JSON.stringify({title: timeline.title});
+        fetch("/API/timeline/create", {
+            headers,
+            body,
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(this.handleErrors)
+        .then(
+            (result) => {
+                this.props.raiseMessage(result.message)
+            }
+        ).catch((error) => {
+            this.props.raiseError(error);
         });
+        setTimeout( () => {this.downloadTimelines();}, 1000);
     }
 
     instaShare(cover, caption){
@@ -126,12 +115,15 @@ class Userspace extends React.Component {
             <div key={timeline.hash} className="mt-4 col-sm-6 col-md-4 col-lg-3">
                 <FadeIn>
                 <div className="card">
-                    <img className="card-img-top" src={timeline.cover_url} alt="Card image cap"/>
+                    <Map
+                        coords={timeline.positions}
+                        timeline_hash={timeline.hash}
+                    />
                     <div className="card-body">
                         <h5 className="card-title">{timeline.title}</h5>
                         <p className="card-text">created on {timeline.creation_date}</p>
                         <p className="font-italic">{timeline.isPublic ? 'public' : 'private: only you can watch this'}</p>
-                        <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">EDITOR</Link>
+                        <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">VIEW</Link>
                         <Share
                             key={timeline.hash}
                             shortenURL={'www.shorten/' + timeline.hash}

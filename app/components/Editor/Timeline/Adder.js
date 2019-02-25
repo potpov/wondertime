@@ -25,32 +25,10 @@ class Adder extends React.Component {
         this.state = this.getInitialState();
     }
 
-
-    /* picture loader */
-
-    loadCover(e){
-        if(e.target.files.length !== 1) {
-            this.setState({message: 'please set one picture.'})
-            return;
-        }
-        let data = e.target.files[Object.keys(e.target.files)[0]];
-        let src = createObjectURL(data);
-        this.setState({
-            cover: data,
-            localURL: src,
-        })
-    }
-
     /* title loaders */
 
     loadTitle(e){
         this.setState({title: e.target.value})
-    }
-
-
-    preview(){
-        if(this.state.localURL)
-            return <img src={this.state.localURL} alt="image-preview" className="img-thumbnail mb-2"/>;
     }
 
     render(){
@@ -62,7 +40,7 @@ class Adder extends React.Component {
                     <div className="modal-dialog modal-dialog-centered" role="document">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title" id="exampleModalLongTitle">Add content</h5>
+                                <h5 className="modal-title" id="exampleModalLongTitle"> Create a new timeline</h5>
                                 <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -77,13 +55,6 @@ class Adder extends React.Component {
                                               id="title"
                                           />
                                     </div>
-                                    {this.preview()}
-                                    <input type="file" className="selectedFiles" ref="picker" name="pic" onChange={(e) => this.loadCover(e)} multiple accept="image/*" />
-                                    <button type="button" className="mb-0 btn btn-raised btn-secondary w-100 p-2"
-                                            onClick={() => this.refs.picker.click()}
-                                    >
-                                        upload cover
-                                    </button>
 
                                 </div>
                             </div>

@@ -167,6 +167,7 @@ class Media(ndb.Model):
     sequence = ndb.IntegerProperty(indexed=True)
     type = ndb.StringProperty(choices=CARD_OPTIONS)
     caption = ndb.StringProperty()
+    place_name = ndb.StringProperty()
     location = ndb.GeoPtProperty()
     active = ndb.BooleanProperty(default=True)
 

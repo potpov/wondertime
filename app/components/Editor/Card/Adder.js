@@ -1,6 +1,5 @@
 import React from 'react';
 
-
 function createObjectURL(object) {
     return (window.URL) ? window.URL.createObjectURL(object) : window.webkitURL.createObjectURL(object);
 }
@@ -31,15 +30,36 @@ function Switch(props) {
 
 /* form section where user can type a place */
 function Place(props){
+
+    //creating the hints list from google api results
+    let results;
+    if (props.hints.length > 1)
+       results = props.hints.map(
+           (hint, i) =>
+                <a className="dropdown-item" key={i} href="#"
+                    onClick={(event) => props.onClick(event, hint.hint, hint.key)}>{hint.hint}
+                </a>
+       );
+
     return(
         <div className="form-group">
-              <label htmlFor="place" className="bmd-label-floating">where did you think it?</label>
-              <input
-                  type="text" className="form-control"
-                  onChange={props.onPlace}
-                  id="place"
-                  defaultValue={props.placehit}
-              />
+            <label htmlFor="place" className="bmd-label-floating">place of this media</label>
+            <div className="dropdown">
+                <input
+                    type="text" className="form-control"
+                    onChange={props.onPlace}
+                    id="place"
+                    autoComplete="off"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                    value={props.place}
+                />
+
+                <div className="dropdown-menu w-100" aria-labelledby="dLabel">
+                    {results}
+                </div>
+
+
+            </div>
         </div>
     );
 }
@@ -116,7 +136,9 @@ class Adder extends React.Component {
             src: [],
             caption: '',
             place: '',
+            place_id: '',
             message: '',
+            hints: ''
         };
     }
 
@@ -127,9 +149,30 @@ class Adder extends React.Component {
     }
 
     /* ask google for places and coords while user is typing */
+    loadHints(place){
+        if(place.length < 3)
+            return;
 
-    loadcoords(){
+        let headers = {
+            "Content-Type": "application/json",
+        };
 
+        return fetch(`/API/place/search/${place}`, {headers, })
+            .then(res => res.json())
+            .then(
+                (result) => {
+                    this.setState({
+                        hints: result,
+                    });
+                }
+            )
+    }
+
+    setPlace(e, place, place_id){
+        this.setState({
+            place: place,
+            place_id: place_id,
+        });
     }
 
     /* picture loader */
@@ -167,7 +210,8 @@ class Adder extends React.Component {
     /* generic media loaders */
 
     loadPlace(e){
-        this.setState({place: e.target.value})
+        this.setState({place: e.target.value});
+        this.loadHints(e.target.value);
     }
 
     loadCaption(e){
@@ -189,7 +233,9 @@ class Adder extends React.Component {
             <>
                 <Place
                     onPlace={(e) => this.loadPlace(e)}
-                    placehit={this.state.place}
+                    onClick={this.setPlace.bind(this)}
+                    hints={this.state.hints}
+                    place={this.state.place}
                 />
                 <Caption
                     onCaption={(e) => this.loadCaption(e)}

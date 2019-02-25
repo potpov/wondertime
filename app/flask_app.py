@@ -12,6 +12,7 @@ from google.appengine.ext import blobstore
 from flask import request
 from werkzeug.http import parse_options_header
 import json
+import requests
 from exceptions import InvalidUsage
 
 webpack = Webpack()
@@ -47,7 +48,7 @@ def img(bkey):
 @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
 @app.route('/<path:path>')
 def index(path):
-    return render_template('index.html')
+    return render_template('index.html', gmaps_api=flask_project_config.MAPS_KEY)
 
 
 class CreateUser(Resource):
@@ -119,7 +120,6 @@ class CreateTimeline(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('title', type=str, required=True)
-        # self.parser.add_argument('cover', type=file, required=True)
         self.parser.add_argument('Authorization', type=str, location='headers', required=True)
 
     def post(self):
@@ -128,16 +128,10 @@ class CreateTimeline(Resource):
         user = model.User.load_user_by_token(token)
         if not isinstance(user, model.User):
             raise InvalidUsage('unable to obtain user')
-        # getting blob instance
-        f = request.files['cover']
-        cover_header = f.headers['Content-Type']
-        parsed_header = parse_options_header(cover_header)
-        blob_key = parsed_header[1]['blob-key']
         # creating the timeline
         model.Timeline(
             parent=user.key,
             title=args.title,
-            cover_url=blobstore.BlobKey(blob_key)
         ).put()
         return {'success': 'timeline created'}
 
@@ -259,11 +253,19 @@ class UpdateTimeline(Resource):
         # adding new elements
         for card in args.items_tree:
             if card['new']:
+                # asking google for coords
+                params = {'key': flask_project_config.MAPS_KEY, 'placeid': card['place_id']}
+                r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
+                place_details = r.json()
+                lat = place_details['result']['geometry']['location']['lat']
+                lng = place_details['result']['geometry']['location']['lng']
                 media = model.Media(
                     parent=timeline.key,
                     sequence=card['sequence'],
                     type=str(card['type']),
-                    caption=str(card['caption']),
+                    caption=card['caption'].encode('utf-8'),
+                    place_name=str(card['place_name']),
+                    location=ndb.GeoPt(lat, lng)
                 )
                 media.put()
                 # saving all the uploads attached to this media
@@ -295,13 +297,27 @@ class LoadTimelines(Resource):
             response = []
             query = model.Timeline.query(ancestor=user.key).filter(model.Timeline.active == True)
             results = query.fetch()
-            for result in results:
+
+            for timeline in results:
+                # loading GPS locations
+                gps = []
+                medias = model.Media.query(
+                    ancestor=timeline.key,
+                    projection=["location", "sequence"],
+                ).order(model.Media.sequence).filter(model.Media.active == True)
+
+                for media in medias:
+                    gps.append({
+                        'lat': media.location.lat,
+                        'lng': media.location.lon,
+                    })
                 response.append({
-                    'creation_date': result.creation_date,
-                    'title': result.title,
-                    'cover_url': '/media/{}'.format(result.cover_url),
-                    'hash': result.key.urlsafe(),
-                    'isPublic': result.is_public
+                    'creation_date': timeline.creation_date,
+                    'title': timeline.title,
+                    'cover_url': '/media/{}'.format(timeline.cover_url),
+                    'hash': timeline.key.urlsafe(),
+                    'isPublic': timeline.is_public,
+                    'positions': gps
                 })
             return jsonify(response)
         raise InvalidUsage('unable to obtain user')  # error message here
@@ -316,6 +332,21 @@ class GetBlobEntry(Resource):
         raise InvalidUsage('invalid request')
 
 
+class SearchPlace(Resource):
+
+    def get(self, place):
+        params = {'key': flask_project_config.MAPS_KEY, 'input': place}
+        r = requests.get('https://maps.googleapis.com/maps/api/place/autocomplete/json', params=params)
+        result = r.json()
+        hints = []
+        for prediction in result['predictions']:
+            hints.append({
+                'hint': prediction['description'],
+                'key': prediction['place_id']
+              })
+        return jsonify(hints)
+
+
 api.add_resource(CreateUser, '/API/user/signup')
 api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
@@ -326,4 +357,5 @@ api.add_resource(UpdateTimeline, '/API/timeline/update')
 api.add_resource(LoadTimeline, '/API/timeline/load/<string:timeline_hash>')
 api.add_resource(LoadTimelines, '/API/timelines/load')
 api.add_resource(GetBlobEntry, '/API/blob/action/<string:action>')
+api.add_resource(SearchPlace, '/API/place/search/<string:place>')
 

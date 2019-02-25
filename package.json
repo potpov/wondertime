@@ -37,6 +37,7 @@
     "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "^16.7.0",
     "react-fade-in": "^0.1.6",
+    "react-native-autocomplete-input": "^3.6.0",
     "react-router-dom": "^4.3.1"
   }
 }

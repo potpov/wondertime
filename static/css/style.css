@@ -182,3 +182,20 @@ h1 a, h1 a:hover{
     margin-left: -3px;
     z-index: -1;
 }
+
+/* google map style */
+
+#map_hash {
+    height: 300px;
+    cursor: default;
+}
+
+a[href^="http://maps.google.com/maps"]{display:none !important}
+a[href^="https://maps.google.com/maps"]{display:none !important}
+
+.gmnoprint a, .gmnoprint span, .gm-style-cc {
+    display:none;
+}
+.gmnoprint div {
+    background:none !important;
+}

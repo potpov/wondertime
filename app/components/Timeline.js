@@ -123,13 +123,13 @@ class Timeline extends React.Component {
                 source: source, // link to real file stored in mediasource!
                 url: localurl, // just a blob for the user.
                 caption: item.caption,
-                long: 10,
+                place_name: item.place,
+                place_id: item.place_id,
                 lat: 10,
                 new: true,
         });
         nextSeq++;
         this.setState({
-            placehit: item.place, // recording the last place for suggesting
             items: items,
             nextSeq: nextSeq,
             mediasource: mediasource,
@@ -137,6 +137,7 @@ class Timeline extends React.Component {
     }
 
     uploadFiles(){
+        this.setState({ status: 'LOADING'});
         //cloning the item tree by keeping only the new items
         let itemstree = [];
         this.state.items.forEach(function(item){
@@ -162,9 +163,8 @@ class Timeline extends React.Component {
                     request.setRequestHeader("Authorization", "Token " + this.props.token);
                     // Send our FormData object; HTTP headers are set automatically
                     request.send(formdata);
-
                     // show logs on response
-                    request.onload = function (e) {
+                    request.onload = ((e) => {
                         if (request.readyState === 4) {
                             if (request.status === 200) {
                                 let json_obj = JSON.parse(request.responseText);
@@ -172,15 +172,15 @@ class Timeline extends React.Component {
                                     this.props.raiseMessage(json_obj['message']);
                                 else if(json_obj['error'])
                                     this.props.raiseError(json_obj['error']);
-
+                                //refresh timelines
+                                this.downloadTimeline();
                             }
                             else {
                                 this.props.raiseError(request.statusText);
                             }
                         }
-                    }.bind(this);
-                    //refresh timelines
-                    setTimeout( () => {this.downloadTimeline();}, 1500);
+                        this.setState({ status: 'LOADED'});
+                    })
                 }
             );
     }
@@ -239,10 +239,10 @@ class Timeline extends React.Component {
         if(this.state.items.length > 0) {
             let timeline = this.state.items.map((media, index) => this.componentFactory(media, index, this.state.isAdmin));
             return(
-                <>
+                <div className="container mb-5 timeline">
                     {timeline}
                     {this.renderSaverEditor()}
-                </>
+                </div>
             );
         }
         else
@@ -255,14 +255,11 @@ class Timeline extends React.Component {
         switch(status){
             case 'LOADING':
                 return (<Messages.Spinner/>);
-
             case 'LOADED':
                 return (
                     <>
                         <FadeIn>
-                            <div className="container mb-5 timeline">
-                                {this.renderTimeline()}
-                            </div>
+                            {this.renderTimeline()}
                         </FadeIn>
                         {this.renderAdderEditor()}
                     </>
