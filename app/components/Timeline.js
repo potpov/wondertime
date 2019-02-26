@@ -236,23 +236,12 @@ class Timeline extends React.Component {
         }
     }
 
-    renderAdderEditor() {
-        if (this.state.isAdmin)
-            return <Editor.Adder onSave={this.addItem.bind(this)} placehit={this.state.placehit}/>;
-    }
-
-    renderSaverEditor(){
-        if (this.state.isAdmin)
-            return <Editor.Saver onClick={this.uploadFiles.bind(this)}/>;
-    }
-
     renderTimeline(){
         if(this.state.items.length > 0) {
             let timeline = this.state.items.map((media, index) => this.componentFactory(media, index, this.state.isAdmin));
             return(
                 <div className="container mb-5 timeline">
                     {timeline}
-                    {this.renderSaverEditor()}
                 </div>
             );
         }
@@ -272,7 +261,15 @@ class Timeline extends React.Component {
                         <FadeIn>
                             {this.renderTimeline()}
                         </FadeIn>
-                        {this.renderAdderEditor()}
+                        {
+                            this.state.isAdmin
+                            ?
+                                <>
+                                    <Editor.Adder onSave={this.addItem.bind(this)} placehit={this.state.placehit}/>
+                                    <Editor.Saver onClick={this.uploadFiles.bind(this)}/>
+                                </>
+                            : null
+                        }
                     </>
                 );
         }

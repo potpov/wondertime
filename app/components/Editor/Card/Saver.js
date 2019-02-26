@@ -4,12 +4,11 @@ import React from "react";
 function SaveButton(props) {
   return (
     <div>
-        <div className="mt-0 text-center">
-            <button type="button" className="mb-0 btn btn-raised btn-success w-50 p-3"
-                    data-toggle="modal" data-target="#saverConfirm">
-                    SAVE CHANGES
-            </button>
-        </div>
+
+        <button type="button" className="editor-button btn btn-success bmd-btn-fab"
+                data-toggle="modal" data-target="#saverConfirm">
+                <i className="far fa-save"> </i>
+        </button>
 
         <div className="modal fade" id="saverConfirm" tabIndex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
           <div className="modal-dialog modal-dialog-centered" role="document">
