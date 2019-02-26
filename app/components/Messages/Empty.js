@@ -4,7 +4,12 @@ class Empty extends React.Component {
 
     render(){
         return(
-            <p>nothing here yet :( you can create new content using the button above</p>
+            <div className="container h-100 d-flex justify-content-center mt-5">
+                    <div className="error-section">
+                        <img src="/static/assets/404_kitty.png"/>
+                        <i><b>nothing here yet.</b><br/>Create new content using the button above</i>
+                    </div>
+            </div>
         );
     }
 

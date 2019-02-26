@@ -12,6 +12,10 @@ h1 a, h1 a:hover{
     color: #03a9f4;
 }
 
+p {
+    font-family: 'Montserrat', sans-serif;
+}
+
 .insta-share {
     color: #cd486b !important;
     border-color: #cd486b !important;
@@ -139,11 +143,11 @@ h1 a, h1 a:hover{
 /* spinner component */
 
 .spinner-position{
-    position: fixed;
+    position: absolute;
     top: 50%;
-    right: 50%;
-
+    left: 50%;
 }
+
 .lds-ripple {
   display: inline-block;
   position: relative;
@@ -178,6 +182,18 @@ h1 a, h1 a:hover{
     height: 58px;
     opacity: 0;
   }
+}
+
+/* generic error page which has to be fixed on the centre of the page */
+
+
+.error-section {
+    width: 300px;
+}
+
+.error-section img {
+    width:300px; /* you can use % */
+    height: auto;
 }
 
 /* timeline */

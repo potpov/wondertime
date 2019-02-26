@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { withCookies, Cookies } from 'react-cookie';
 import { instanceOf } from 'prop-types';
 
@@ -177,51 +177,56 @@ class App extends React.Component {
     render() {
         const {isAuth, token} = this.state;
         return(
-                <Router>
+                <BrowserRouter>
                     <>
                         <Navbar
                             signOut={this.signOut.bind(this)}
                             isAuth={isAuth}
                         />
 
-                        <RouteWithProps
-                            exact path="/"
-                            component={Welcome}
-                            isAuth={isAuth}
-                        />
+                        <Switch>
+                            <RouteWithProps
+                                exact path="/"
+                                component={Welcome}
+                                isAuth={isAuth}
+                            />
 
-                        <RouteWithProps
-                            exact path="/login"
-                            component={Access}
-                            isAuth={isAuth}
-                            signIn={this.signIn.bind(this)}
-                            signUp={this.signUp.bind(this)}
-                        />
+                            <RouteWithProps
+                                exact path="/login"
+                                component={Access}
+                                isAuth={isAuth}
+                                signIn={this.signIn.bind(this)}
+                                signUp={this.signUp.bind(this)}
+                            />
 
-                        <RouteWithProps
-                            exact path="/experiences"
-                            component={Userspace}
-                            isAuth={isAuth}
-                            token={token}
-                            raiseError={this.raiseError.bind(this)}
-                            raiseMessage={this.raiseMessage.bind(this)}
-                        />
+                            <RouteWithProps
+                                exact path="/experiences"
+                                component={Userspace}
+                                isAuth={isAuth}
+                                token={token}
+                                raiseError={this.raiseError.bind(this)}
+                                raiseMessage={this.raiseMessage.bind(this)}
+                            />
 
-                        <RouteWithProps
-                            path="/timeline/:id/:marker?"
-                            component={Timeline}
-                            token={token}
-                            raiseError={this.raiseError.bind(this)}
-                            raiseMessage={this.raiseMessage.bind(this)}
-                        />
+                            <RouteWithProps
+                                path="/timeline/:id/:marker?"
+                                component={Timeline}
+                                token={token}
+                                raiseError={this.raiseError.bind(this)}
+                                raiseMessage={this.raiseMessage.bind(this)}
+                            />
 
-                         <Messages.Banner
-                             errors={this.state.errors}
-                             messages={this.state.messages}
-                             onReset={this.cleanLogs.bind(this)}
-                         />
+                            <RouteWithProps
+                                component={Messages.NotFound}
+                            />
+                        </Switch>
+                        <Messages.Banner
+                            errors={this.state.errors}
+                            messages={this.state.messages}
+                            onReset={this.cleanLogs.bind(this)}
+                        />
                     </>
-                </Router>
+                </BrowserRouter>
         );
 
     }
