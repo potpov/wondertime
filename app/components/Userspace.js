@@ -2,6 +2,7 @@ import React from 'react';
 import {Link, Redirect} from 'react-router-dom';
 
 import Adder from "./Editor/Timeline/Adder";
+import Deleter from "./Editor/Timeline/Deleter";
 import Share from "./Share";
 import * as Messages from "./Messages";
 
@@ -88,15 +89,37 @@ class Userspace extends React.Component {
 
     }
 
-    makePublic(timeline){
+    makePublic(timeline_hash){
         this.setState({status: 'LOADING' });
         let headers = {"Content-Type": "application/json"};
         if (this.props.token) {
           headers["Authorization"] = `Token ${this.props.token}`;
         }
-        let body = JSON.stringify({'timeline_hash': timeline.hash});
+        let body = JSON.stringify({'timeline_hash': timeline_hash});
 
         fetch("/API/timeline/publish", {headers, body, method: "POST"})
+            .then(res => res.json())
+            .then(this.handleErrors)
+            .then(
+                (result) => {
+                    this.props.raiseMessage(result.message);
+                    // refresh
+                    setTimeout( () => {this.downloadTimelines();}, 1000);
+                }
+            ).catch((error) => {
+                this.props.raiseError(error);
+        });
+    }
+
+    removeTimeline(timeline_hash){
+        this.setState({status: 'LOADING' });
+        let headers = {"Content-Type": "application/json"};
+        if (this.props.token) {
+          headers["Authorization"] = `Token ${this.props.token}`;
+        }
+        let body = JSON.stringify({'timeline_hash': timeline_hash});
+
+        fetch("/API/timeline/delete", {headers, body, method: "POST"})
             .then(res => res.json())
             .then(this.handleErrors)
             .then(
@@ -126,10 +149,14 @@ class Userspace extends React.Component {
                         <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">VIEW</Link>
                         <Share
                             key={timeline.hash}
-                            shortenURL={'www.shorten/' + timeline.hash}
+                            shortenURL={window.location.origin + '/timeline/' + timeline.hash}
                             timeline={timeline}
-                            onMakePublic={this.makePublic.bind(this, timeline)}
+                            onMakePublic={this.makePublic.bind(this, timeline.hash)}
                             onInsta={this.instaShare.bind(this)}
+                        />
+                        <Deleter
+                            timeline={timeline.title}
+                            onClick={this.removeTimeline.bind(this, timeline.hash)}
                         />
                     </div>
                 </div>

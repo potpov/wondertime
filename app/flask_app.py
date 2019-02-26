@@ -184,6 +184,33 @@ class MakeTimelinePublic(Resource):
             return {'error': e.args[0]}
 
 
+class DeleteTimeline(Resource):
+
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('timeline_hash', type=str, required=True)
+        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+
+    def post(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            user = model.User.load_user_by_token(token)
+            if not isinstance(user, model.User):
+                raise InvalidUsage('unable to obtain user')
+            timeline = model.Timeline.load_timeline(entity_key=args.timeline_hash)
+            if not isinstance(timeline, model.Timeline):
+                raise InvalidUsage('unable to obtain timeline')
+            if timeline.key.parent() == user.key:  # check if the auth user is also admin for this timeline
+                timeline.active = False
+                timeline.put()
+                return {'message': 'timeline deleted successfully'},
+            else:
+                raise InvalidUsage('permission denied')
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
 class LoadTimeline(Resource):
 
     def __init__(self):
@@ -296,6 +323,9 @@ class UpdateTimeline(Resource):
                     if card['type'] not in ['picture', 'caption', 'video', 'gallery']:
                         raise InvalidUsage('dont try to hack me plsss.')
                     caption = utils.escape(card['caption'].encode('utf-8').strip())
+                    # skip empty captions
+                    if card['type'] == 'caption' and len(caption) == 0:
+                        continue
                     # end of first controls
                     media = model.Media(
                         parent=timeline.key,
@@ -411,6 +441,7 @@ api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
 api.add_resource(LogoutUser, '/API/user/logout')
 api.add_resource(CreateTimeline, '/API/timeline/create')
+api.add_resource(DeleteTimeline, '/API/timeline/delete')
 api.add_resource(MakeTimelinePublic, '/API/timeline/publish')
 api.add_resource(UpdateTimeline, '/API/timeline/update')
 api.add_resource(LoadTimeline, '/API/timeline/load/<string:timeline_hash>')

@@ -135,8 +135,8 @@ class Adder extends React.Component {
             file: [],
             src: [],
             caption: '',
-            place: '',
-            place_id: '',
+            place: this.props.prev_place_name,
+            place_id: this.props.prev_place_id,
             message: '',
             hints: ''
         };

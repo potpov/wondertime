@@ -14,7 +14,8 @@ class Timeline extends React.Component {
         this.state = {
             status: 'LOADING',
             isAdmin: false, // should we load the editor part of the timeline?
-            placehit: '', // avoid editors to type a new place is it's te same of the previous one added
+            prev_place_id: '', // card place is not changed? -> previous id value
+            prev_place_name: '', // card place is not changed? -> previous name value
             nextSeq: 0,
             items: [], // list of current items without files
             toBeRemoved: [], // sequence number of files to be removed
@@ -127,7 +128,6 @@ class Timeline extends React.Component {
                 caption: item.caption,
                 place_name: item.place,
                 place_id: item.place_id,
-                lat: 10,
                 new: true,
         });
         nextSeq++;
@@ -135,6 +135,8 @@ class Timeline extends React.Component {
             items: items,
             nextSeq: nextSeq,
             mediasource: mediasource,
+            prev_place_id: item.place_id,
+            prev_place_name: item.place,
         });
     }
 
@@ -265,7 +267,11 @@ class Timeline extends React.Component {
                             this.state.isAdmin
                             ?
                                 <>
-                                    <Editor.Adder onSave={this.addItem.bind(this)} placehit={this.state.placehit}/>
+                                    <Editor.Adder
+                                        onSave={this.addItem.bind(this)}
+                                        prev_place_id={this.state.prev_place_id}
+                                        prev_place_name={this.state.prev_place_name}
+                                    />
                                     <Editor.Saver onClick={this.uploadFiles.bind(this)}/>
                                 </>
                             : null
