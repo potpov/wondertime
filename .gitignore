@@ -15,3 +15,7 @@ assets/bundles/
 build/manifest\.json
 
 bundles/
+
+manifest\.json
+
+webpack\.config\.js

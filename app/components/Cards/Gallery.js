@@ -10,7 +10,7 @@ class Gallery extends React.Component {
     }
 
     Carousel(){
-        return this.props.urls.map(function(url, index) {
+        return this.props.urls.map((url, index) => {
                 let cls = (index === 0) ? 'carousel-item active' : 'carousel-item';
                 return (
                     <div id={this.props.card_focus} key={index} className={cls}>

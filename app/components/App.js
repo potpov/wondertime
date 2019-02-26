@@ -158,10 +158,12 @@ class App extends React.Component {
 
     raiseError(error){
         this.setState({ errors: error, });
+        setTimeout( () => {this.cleanLogs();}, 2500);
     }
 
     raiseMessage(message){
         this.setState({ messages: message, });
+        setTimeout( () => {this.cleanLogs();}, 2500);
     }
 
     cleanLogs(){
