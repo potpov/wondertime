@@ -224,14 +224,19 @@ class LoadTimeline(Resource):
                 for file_url in model.File.query(ancestor=media.key):
                     files.append('{}/{}'.format(flask_project_config.MEDIA_PUB_DIR, file_url.blob_url))
                 #  adding the media to the media response list
+                if media.location:
+                    coords = {
+                        'lat': media.location.lat,
+                        'lng': media.location.lon,
+                    }
+                else:
+                    coords = {'lat': 'undefined', 'lng': 'undefined'}
+
                 result.append({
                     'sequence': media.sequence,
                     'type': media.type,
                     'caption': media.caption,
-                    'coords': {
-                        'lat': media.location.lat,
-                        'lng': media.location.lon,
-                    },
+                    'coords': coords,
                     'url': files,
                 })
 
@@ -282,20 +287,22 @@ class UpdateTimeline(Resource):
             # adding new elements
             for card in args.items_tree:
                 if card['new']:
-                    # asking google for coords
-                    params = {'key': flask_project_config.MAPS_KEY, 'placeid': card['place_id']}
-                    r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
-                    place_details = r.json()
-                    lat = place_details['result']['geometry']['location']['lat']
-                    lng = place_details['result']['geometry']['location']['lng']
                     media = model.Media(
                         parent=timeline.key,
                         sequence=card['sequence'],
                         type=str(card['type']),
                         caption=card['caption'].encode('utf-8'),
-                        place_name=str(card['place_name']),
-                        location=ndb.GeoPt(lat, lng)
                     )
+                    # asking google for coords if there are
+                    if card['place_id']:
+                        params = {'key': flask_project_config.MAPS_KEY, 'placeid': card['place_id']}
+                        r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
+                        place_details = r.json()
+                        if place_details['status'] == 'OK':
+                            lat = place_details['result']['geometry']['location']['lat']
+                            lng = place_details['result']['geometry']['location']['lng']
+                            media.location = ndb.GeoPt(lat, lng)
+                            media.place_name = str(card['place_name'])
                     media.put()
                     # saving all the uploads attached to this media
                     if card['source']:
@@ -339,10 +346,11 @@ class LoadTimelines(Resource):
                     ).order(model.Media.sequence).filter(model.Media.active == True)
 
                     for media in medias:
-                        gps.append({
-                            'lat': media.location.lat,
-                            'lng': media.location.lon,
-                        })
+                        if media.location:
+                            gps.append({
+                                'lat': media.location.lat,
+                                'lng': media.location.lon,
+                            })
                     response.append({
                         'creation_date': timeline.creation_date,
                         'title': timeline.title,
