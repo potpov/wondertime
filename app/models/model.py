@@ -73,8 +73,18 @@ class User(ndb.Model):
         :param password:
         :return: Json Object {username, token}| {error}
         """
+
+        password = password.strip()
+
+        if not re.match("^[a-zA-Z0-9_]*$", username):
+            raise InvalidUsage('the only special char available for username is _')
+
+        if len(password) < 8:
+            raise InvalidUsage('password must be greater than 7 chars')
+
         if not User.validate_new_email(email):
             raise InvalidUsage('email already exists or not valid')
+
         if User.get_by_id(username) is not None:
             raise InvalidUsage('username already exists')
 

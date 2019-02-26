@@ -11,6 +11,8 @@ from google.appengine.ext import blobstore
 from flask import request
 from werkzeug.http import parse_options_header
 import json
+from jinja2 import utils
+import re
 import requests
 from exceptions import InvalidUsage
 
@@ -144,10 +146,11 @@ class CreateTimeline(Resource):
             user = model.User.load_user_by_token(token)
             if not isinstance(user, model.User):
                 raise InvalidUsage('unable to obtain user')
-            # creating the timeline
+            # escape of xss inputs
+            title = str(utils.escape(args.title.strip()))
             model.Timeline(
                 parent=user.key,
-                title=args.title,
+                title=title,
             ).put()
             return {'success': 'timeline created'}
         except InvalidUsage as e:
@@ -287,11 +290,18 @@ class UpdateTimeline(Resource):
             # adding new elements
             for card in args.items_tree:
                 if card['new']:
+                    # filtering all the inputs
+                    if not isinstance(card['sequence'], (int, long)):
+                        raise InvalidUsage('timeline partially updated. suspicious input detected.')
+                    if card['type'] not in ['picture', 'caption', 'video', 'gallery']:
+                        raise InvalidUsage('dont try to hack me plsss.')
+                    caption = utils.escape(card['caption'].encode('utf-8').strip())
+                    # end of first controls
                     media = model.Media(
                         parent=timeline.key,
                         sequence=card['sequence'],
                         type=str(card['type']),
-                        caption=card['caption'].encode('utf-8'),
+                        caption=caption,
                     )
                     # asking google for coords if there are
                     if card['place_id']:
@@ -381,7 +391,8 @@ class SearchPlace(Resource):
 
     def get(self, place):
         try:
-            params = {'key': flask_project_config.MAPS_KEY, 'input': place}
+            safe_place = utils.escape(place.encode('utf-8').strip())
+            params = {'key': flask_project_config.MAPS_KEY, 'input': safe_place}
             r = requests.get('https://maps.googleapis.com/maps/api/place/autocomplete/json', params=params)
             result = r.json()
             hints = []

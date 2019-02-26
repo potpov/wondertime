@@ -66,7 +66,7 @@ class Adder extends React.Component {
                     </div>
                 </div>
 
-                <div className="adding-button">
+                <div className="adding-timeline-button">
                     <button type="button" className="btn btn-danger bmd-btn-fab"
                             data-toggle="modal" data-target="#exampleModalCenter"
                             onClick={() => {this.setState(this.getInitialState);}}
