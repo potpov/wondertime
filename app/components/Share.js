@@ -81,12 +81,12 @@ class Share extends React.Component {
         return(
             <>
 
-                <div className="modal fade" id={'modal-'+ this.props.timeline.hash} tabIndex="-1" role="dialog"
+                <div className="modal fade" id={'shareconfirm-'+ this.props.timeline.hash} tabIndex="-1" role="dialog"
                      aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
                     <div className="modal-dialog modal-dialog-centered" role="document">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title" id={'#modal-'+ this.props.timeline.hash}>share with your friends</h5>
+                                <h5 className="modal-title" id={'#shareconfirm-'+ this.props.timeline.hash}>share with your friends</h5>
                                 <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>

@@ -67,7 +67,7 @@ class CreateUser(Resource):
     def post(self):
         try:
             args = self.parser.parse_args()
-            result = model.User.create_new_user(args.username, args.email, args.password)
+            result = model.User.create_new_user(args.username.lower(), args.email.lower(), args.password)
             return jsonify(result)
         except InvalidUsage as e:
             return {'error': e.args[0]}
@@ -83,7 +83,7 @@ class LoginUser(Resource):
     def post(self):
         try:
             args = self.parser.parse_args()
-            result = model.User.login_user(args.username, args.password)
+            result = model.User.login_user(args.username.lower(), args.password)
             return make_response(jsonify(result), 200)
         except InvalidUsage as e:
             return {'error': e.args[0]}
@@ -436,6 +436,26 @@ class SearchPlace(Resource):
             return {'error': e.args[0]}
 
 
+class MatchPlace(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('lon', type=int, required=True)
+        self.parser.add_argument('lat', type=int, required=True)
+
+    def get(self):
+        args = self.parser.parse_args()
+        lat = args.lat % 360
+        lon = args.lon % 360
+        medias = model.Media.query(ndb.AND(
+            model.Media.location.lat % 360 - lat > -1,
+            model.Media.location.lat % 360 - lat < 1,
+            model.Media.location.lon % 360 - lon > -1,
+            model.Media.location.lon % 360 - lon < 1,
+            )
+        )
+        return {'non funzionera mai': '{}'.format(medias.count())}
+
+
 api.add_resource(CreateUser, '/API/user/signup')
 api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
@@ -448,4 +468,5 @@ api.add_resource(LoadTimeline, '/API/timeline/load/<string:timeline_hash>')
 api.add_resource(LoadTimelines, '/API/timelines/load')
 api.add_resource(GetBlobEntry, '/API/blob/action/<string:action>')
 api.add_resource(SearchPlace, '/API/place/search/<string:place>')
+api.add_resource(MatchPlace, '/API/place/neighbours/')
 

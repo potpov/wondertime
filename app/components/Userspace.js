@@ -148,14 +148,15 @@ class Userspace extends React.Component {
                         <p className="font-italic">{timeline.isPublic ? 'public' : 'private: only you can watch this'}</p>
                         <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">VIEW</Link>
                         <Share
-                            key={timeline.hash}
+                            key={'share_' + timeline.hash}
                             shortenURL={window.location.origin + '/timeline/' + timeline.hash}
                             timeline={timeline}
                             onMakePublic={this.makePublic.bind(this, timeline.hash)}
                             onInsta={this.instaShare.bind(this)}
                         />
                         <Deleter
-                            timeline={timeline.title}
+                            key={'remove_' + timeline.hash}
+                            timeline={timeline}
                             onClick={this.removeTimeline.bind(this, timeline.hash)}
                         />
                     </div>

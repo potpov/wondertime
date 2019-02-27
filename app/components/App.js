@@ -10,6 +10,7 @@ import Welcome from "./Welcome"
 import Access from "./Access/Access"
 import Timeline from "./Timeline";
 import Navbar from "./Navbar";
+import About from "./About";
 
 const RouteWithProps = ({ path, exact, component:Component, ...rest }) => (
   <Route
@@ -200,7 +201,12 @@ class App extends React.Component {
                             />
 
                             <RouteWithProps
-                                exact path="/experiences"
+                                exact path="/about"
+                                component={About}
+                            />
+
+                            <RouteWithProps
+                                exact path="/experiences/:username?"
                                 component={Userspace}
                                 isAuth={isAuth}
                                 token={token}
