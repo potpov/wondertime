@@ -12,9 +12,8 @@ h1 a, h1 a:hover{
     color: #03a9f4;
 }
 
-.insta-share {
-    color: #cd486b !important;
-    border-color: #cd486b !important;
+.list-group-item.active{
+    background-color:  #03a9f4 !important;
 }
 
 .link-share {

@@ -113,6 +113,50 @@ class LoadUser(Resource):
             return {'error': e.args[0]}
 
 
+class UpdatePassword(Resource):
+
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument(
+            'Authorization',
+            type=str,
+            location='headers',
+            required=True,
+            help='auth token required to view this page'
+        )
+        self.parser.add_argument('password', type=str, required=True)
+
+    def post(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            user = model.User.load_user_by_token(token)
+            user.change_password(args.password)
+            return {'message': 'password updated.'}
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
+class UserDetails(Resource):
+
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+
+    def get(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            result = model.User.load_user_by_token(token)
+            return jsonify({
+                'username': result.username,
+                'email': result.email,
+                'registered_on': result.registered_on
+            })
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
 class LogoutUser(Resource):
 
     def __init__(self):
@@ -457,7 +501,6 @@ class LoadTimelines(Resource):
                     response.append({
                         'creation_date': timeline.creation_date,
                         'title': timeline.title,
-                        'cover_url': '/media/{}'.format(timeline.cover_url),
                         'hash': timeline.key.urlsafe(),
                         'isPublic': timeline.is_public,
                         'positions': gps
@@ -513,14 +556,11 @@ class MatchPlace(Resource):
         args = self.parser.parse_args()
         lat = args.lat % 360
         lon = args.lon % 360
-        medias = model.Media.query(ndb.AND(
-            model.Media.location.lat % 360 - lat > -1,
-            model.Media.location.lat % 360 - lat < 1,
-            model.Media.location.lon % 360 - lon > -1,
-            model.Media.location.lon % 360 - lon < 1,
-            )
-        )
-        return {'non funzionera mai': '{}'.format(medias.count())}
+        uno = ndb.GeoPt(lat, lon)
+        due = ndb.GeoPt(50, 50)
+        due.ToXml()
+        # medias = model.Media.query()
+        return {'non funzionera mai': '{} {}'.format(due.lat, uno.lon)}
 
 
 class CreateFeed(Resource):
@@ -577,6 +617,9 @@ api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
 api.add_resource(SearchUser, '/API/user/search/<string:username>')
 api.add_resource(LogoutUser, '/API/user/logout')
+api.add_resource(UpdatePassword, '/API/user/update')
+api.add_resource(UserDetails, '/API/user/details/')
+
 api.add_resource(FollowToggle, '/API/user/relationship/toggle')
 api.add_resource(CreateFeed, '/API/user/relationship/feed')
 

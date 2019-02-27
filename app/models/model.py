@@ -157,6 +157,12 @@ class User(ndb.Model):
             return user
         raise InvalidUsage('this user does not exist anymore')
 
+    def change_password(self, password):
+        if len(password.strip()) < 8:
+            raise InvalidUsage('password must be greater than 7 chars')
+        self.password = pbkdf2.crypt(password, iterations=config.CRYPT_LOG_ROUNDS)
+        self.put()
+
 
 class Timeline(ndb.Model):
     # set user as parent when creating a new entity here

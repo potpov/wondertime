@@ -14,6 +14,7 @@ import About from "./About";
 import Feed from "./Feed";
 import Spinner from "./Messages/Spinner";
 import Results from "./Search/Results";
+import Settings from "./Settings"
 
 const RouteWithProps = ({ path, exact, component:Component, ...rest }) => (
   <Route
@@ -217,6 +218,19 @@ class App extends React.Component {
                         <RouteWithProps
                             exact path="/search/:place_id?"
                             component={Results}
+                            isAuth={isAuth}
+                            token={token}
+                            raiseError={this.raiseError.bind(this)}
+                            raiseMessage={this.raiseMessage.bind(this)}
+                        />
+
+                        <RouteWithProps
+                            exact path="/settings"
+                            component={Settings}
+                            isAuth={isAuth}
+                            token={token}
+                            raiseError={this.raiseError.bind(this)}
+                            raiseMessage={this.raiseMessage.bind(this)}
                         />
 
                         <RouteWithProps
