@@ -11,6 +11,9 @@ import Access from "./Access/Access"
 import Timeline from "./Timeline";
 import Navbar from "./Navbar";
 import About from "./About";
+import Feed from "./Feed";
+import Spinner from "./Messages/Spinner";
+import Results from "./Search/Results";
 
 const RouteWithProps = ({ path, exact, component:Component, ...rest }) => (
   <Route
@@ -27,7 +30,8 @@ class App extends React.Component {
         const { cookies } = props;
         this.state = {
             token: cookies.get('token'),
-            logs: null
+            logs: null,
+            status: 'LOADING'
         };
     }
 
@@ -50,7 +54,7 @@ class App extends React.Component {
     loadUser() {
         const token = this.state.token;
         if (!token){
-            this.setState({isAuth: false});
+            this.setState({isAuth: false, status: 'LOADED'});
             return;
         }
 
@@ -63,10 +67,10 @@ class App extends React.Component {
             .then(this.handleErrors)
             .then(
                 (result) => {
-                    this.setState({isAuth: true, username: result.user});
+                    this.setState({isAuth: true, username: result.user, status: 'LOADED'});
                 }
             ).catch((error) => {
-                this.setState({isAuth: false});
+                this.setState({isAuth: false, status: 'LOADED'});
                 this.raiseError(error);
             });
     }
@@ -176,63 +180,83 @@ class App extends React.Component {
 
 
     render() {
-        const {isAuth, token} = this.state;
+        const {isAuth, token, status, username} = this.state;
+        if(status === 'LOADING')
+            return(<Spinner/>);
+
         return(
-                <BrowserRouter>
-                    <>
-                        <Navbar
-                            signOut={this.signOut.bind(this)}
+            <BrowserRouter>
+                <>
+                    <Navbar
+                        signOut={this.signOut.bind(this)}
+                        isAuth={isAuth}
+                        username={username}
+                        raiseError={this.raiseError.bind(this)}
+                    />
+
+                    <Switch>
+                        <RouteWithProps
+                            exact path="/"
+                            component={Welcome}
                             isAuth={isAuth}
                         />
 
-                        <Switch>
-                            <RouteWithProps
-                                exact path="/"
-                                component={Welcome}
-                                isAuth={isAuth}
-                            />
-
-                            <RouteWithProps
-                                exact path="/login"
-                                component={Access}
-                                isAuth={isAuth}
-                                signIn={this.signIn.bind(this)}
-                                signUp={this.signUp.bind(this)}
-                            />
-
-                            <RouteWithProps
-                                exact path="/about"
-                                component={About}
-                            />
-
-                            <RouteWithProps
-                                exact path="/experiences/:username?"
-                                component={Userspace}
-                                isAuth={isAuth}
-                                token={token}
-                                raiseError={this.raiseError.bind(this)}
-                                raiseMessage={this.raiseMessage.bind(this)}
-                            />
-
-                            <RouteWithProps
-                                path="/timeline/:id/:marker?"
-                                component={Timeline}
-                                token={token}
-                                raiseError={this.raiseError.bind(this)}
-                                raiseMessage={this.raiseMessage.bind(this)}
-                            />
-
-                            <RouteWithProps
-                                component={Messages.NotFound}
-                            />
-                        </Switch>
-                        <Messages.Banner
-                            errors={this.state.errors}
-                            messages={this.state.messages}
-                            onReset={this.cleanLogs.bind(this)}
+                        <RouteWithProps
+                            exact path="/login"
+                            component={Access}
+                            isAuth={isAuth}
+                            signIn={this.signIn.bind(this)}
+                            signUp={this.signUp.bind(this)}
                         />
-                    </>
-                </BrowserRouter>
+
+                        <RouteWithProps
+                            exact path="/about"
+                            component={About}
+                        />
+
+                        <RouteWithProps
+                            exact path="/search/:place_id?"
+                            component={Results}
+                        />
+
+                        <RouteWithProps
+                            path="/experiences/:username?"
+                            component={Userspace}
+                            isAuth={isAuth}
+                            token={token}
+                            raiseError={this.raiseError.bind(this)}
+                            raiseMessage={this.raiseMessage.bind(this)}
+                        />
+
+                         <RouteWithProps
+                            path="/feed"
+                            component={Feed}
+                            isAuth={isAuth}
+                            token={token}
+                            raiseError={this.raiseError.bind(this)}
+                            raiseMessage={this.raiseMessage.bind(this)}
+                        />
+
+                        <RouteWithProps
+                            path="/timeline/:id/:marker?"
+                            component={Timeline}
+                            token={token}
+                            raiseError={this.raiseError.bind(this)}
+                            raiseMessage={this.raiseMessage.bind(this)}
+                        />
+
+                        <RouteWithProps
+                            component={Messages.NotFound}
+                        />
+                    </Switch>
+
+                    <Messages.Banner
+                        errors={this.state.errors}
+                        messages={this.state.messages}
+                        onReset={this.cleanLogs.bind(this)}
+                    />
+                </>
+            </BrowserRouter>
         );
 
     }

@@ -108,7 +108,7 @@ class User(ndb.Model):
         Login user
         :param username:
         :param password:
-        :return: Json Object {username, token} | {error}
+        :return: Json Object {username, token}
         """
 
         if not username or not password:
@@ -125,6 +125,24 @@ class User(ndb.Model):
             'username': user.username,
             'token': token
         }
+
+
+    @staticmethod
+    def load_user_by_username(username):
+        """
+        Login user
+        :param username:
+        :return: User
+        """
+
+        if not username:
+            raise InvalidUsage('missing required parameters')
+
+        user = ndb.Key(User, username).get()
+        if not user:
+            raise InvalidUsage('user does not exist!')
+        return user
+
 
     @staticmethod
     def load_user_by_token(token):
@@ -185,3 +203,18 @@ class Media(ndb.Model):
 class File(ndb.Model):
     # set Media as parent when creating a new entity here
     blob_url = ndb.BlobKeyProperty()
+
+
+class Followers(ndb.Model):
+    followed = ndb.StringProperty()
+
+    """
+    check if userA is following userB
+    :param User myuser:
+    :param User target:
+    :return: Bool
+    """
+    @staticmethod
+    def isFollowing(myuser, target):
+        query = Followers.query(ancestor=myuser.key).filter(Followers.followed == target.username)
+        return query.count() > 0

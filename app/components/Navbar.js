@@ -1,26 +1,37 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
+import Search from './Search/Form';
 
 class Navbar extends React.Component {
 
-    loggedPart(){
-        return(
-            <div>
+    profile(){
+        if(!this.props.isAuth){
+            return (
                 <li className="nav-item">
-                    <Link to={'/'} className="nav-link" onClick={this.props.signOut}>Logout</Link>
+                    <Link to={'/login'} className="nav-link">Login</Link>
                 </li>
-            </div>
-        );
+            );
+        }
+        else {
+            return (
+                <>
+                    <li className="nav-item">
+                        <Link to={'/feed'} className={'nav-link'}>news feed</Link>
+                    </li>
+                    <li className="nav-item dropdown">
+                        <a className="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {this.props.username}
+                        </a>
+                        <div className="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <Link to={'/experiences'} className="dropdown-item">Your profile</Link>
+                            <Link to={'/'} className="dropdown-item" onClick={this.props.signOut}>Logout</Link>
+                        </div>
+                    </li>
+                </>
+            )
+        }
     }
-
-    guestPart(){
-        return(
-            <li className="nav-item">
-                <Link to={'/login'} className="nav-link">Login</Link>
-            </li>
-        );
-    }
-
     render(){
 
         return(
@@ -37,14 +48,11 @@ class Navbar extends React.Component {
                         <li className="nav-item">
                             <Link to={'/about'} className={'nav-link'}>about us</Link>
                         </li>
-                        { this.props.isAuth ? this.loggedPart() : this.guestPart() }
+                        { this.profile() }
                     </ul>
-                    <form className="form-inline">
-                        <span className="bmd-form-group">
-                            <input className="form-control mr-sm-2" type="search" placeholder="type a place.." aria-label="Search"/>
-                        </span>
-                        <button className="btn btn-outline-info my-2 my-sm-0" type="submit">Explore</button>
-                    </form>
+                    <Search
+                        raiseError={this.props.raiseError}
+                    />
                 </div>
             </nav>
         );

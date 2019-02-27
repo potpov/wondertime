@@ -33,25 +33,9 @@ class Share extends React.Component {
             );
         }
 
+        // a switch left here if you want to share content in other ways
+        // just re-use the modal-body in the way you prefer.
         switch (this.state.type) {
-            case 'instagram':
-                return (
-                    <div>
-                        <div className="modal-body">
-                            instagram
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                            <button type="button" className="btn btn-primary" onClick={() => {
-                                this.props.onInsta(
-                                    this.props.timeline.cover_url,
-                                    this.state.caption
-                                );
-                            }} data-dismiss="modal">share on instagram</button>
-                        </div>
-                    </div>
-
-                );
             case 'link':
                 return (
                     <div>
@@ -96,17 +80,9 @@ class Share extends React.Component {
                     </div>
                 </div>
 
-
-                <button className='
-                    btn btn-outline-info insta-share w-100 mb-1'
-                    data-toggle="modal" data-target={'#modal-'+this.props.timeline.hash}
-                    onClick={() => {this.setState({type: 'instagram'});}}
-                    >
-                        share on <i className="fab fa-instagram"> </i>
-                </button>
                 <button className='
                     btn btn-outline-info link-share w-100 mb-1'
-                    data-toggle="modal" data-target={'#modal-'+this.props.timeline.hash}
+                    data-toggle="modal" data-target={'#shareconfirm-'+this.props.timeline.hash}
                     onClick={() => {this.setState({type: 'link'});}}
                     >
                     get the link <i className="fas fa-share-square"> </i>

@@ -132,6 +132,55 @@ class LogoutUser(Resource):
             return {'error': e.args[0]}
 
 
+class SearchUser(Resource):
+
+    def get(self, username):
+        try:
+            safe_user = utils.escape(username.encode('utf-8').strip()).lower()
+            limit = safe_user[:-1] + chr(ord(safe_user[-1]) + 1)
+            results = model.User.query(
+                model.User.username >= safe_user,
+                model.User.username < limit,
+            ).fetch(50)
+
+            return jsonify(
+                [{'hint': result.username} for result in results]
+            )
+
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
+class FollowToggle(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+        self.parser.add_argument('action', type=str, required=True)
+        self.parser.add_argument('target', type=str, required=True)
+
+    def post(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            user = model.User.load_user_by_token(token)  # just checking there's a token to invalidate
+            if args.action == 'UNFOLLOW':  # toggle -> delete this follow
+                relationships = model.Followers.query(ancestor=user.key).filter(
+                    model.Followers.followed == args.target
+                ).fetch()
+                for rel in relationships:
+                    rel.key.delete()
+            elif args.action == 'FOLLOW':  # toggle -> create a new relathionship
+                model.Followers(
+                    parent=user.key,
+                    followed=args.target,
+                ).put()
+            else:
+                raise InvalidUsage('no valid action provided')
+            return {'message': 'relationship updated'}
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
 class CreateTimeline(Resource):
 
     def __init__(self):
@@ -366,15 +415,29 @@ class LoadTimelines(Resource):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('Authorization', type=str, location='headers', required=True)
 
-    def get(self):
+    def get(self, username=None):
         try:
             args = self.parser.parse_args()
             token = args.Authorization.split(" ")[1]
+            # checking if the user is authenticated
             user = model.User.load_user_by_token(token)
+            # switch: if username is specified we load this username's timelines
+            # otherwise we keep loading the authenticated user's timelines.
+            if username:
+                myuser = user
+                user = model.User.load_user_by_username(username)
+                is_following = model.Followers.isFollowing(myuser, user)
+                is_admin = False
+            else:
+                is_admin = True
+                is_following = True  # always follow yourself
 
             if isinstance(user, model.User):
                 response = []
                 query = model.Timeline.query(ancestor=user.key).filter(model.Timeline.active == True)
+                # if it is not our personal page let's hide private timelines
+                if not is_admin:
+                    query = query.filter(model.Timeline.is_public == True)
                 results = query.fetch()
 
                 for timeline in results:
@@ -399,7 +462,11 @@ class LoadTimelines(Resource):
                         'isPublic': timeline.is_public,
                         'positions': gps
                     })
-                return jsonify(response)
+                return jsonify({
+                    'timelines': response,
+                    'is_admin': is_admin,
+                    'is_following': is_following
+                })
             raise InvalidUsage('unable to obtain user')  # error message here
         except InvalidUsage as e:
             return {'error': e.args[0]}
@@ -456,17 +523,76 @@ class MatchPlace(Resource):
         return {'non funzionera mai': '{}'.format(medias.count())}
 
 
+class CreateFeed(Resource):
+
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+
+    def get(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            # checking if the user is authenticated
+            user = model.User.load_user_by_token(token)
+            if isinstance(user, model.User):
+                response = []
+                followed = model.Followers.query(
+                    ancestor=user.key
+                )
+                feed = []
+                for fol in followed:
+                    for fol_tl in model.Timeline.query(
+                                    model.Timeline.is_public == True,
+                                    ancestor=ndb.Key(model.User, fol.followed),
+                                    ).order(-model.Timeline.creation_date).fetch(3):
+                        gps = []
+                        for fol_tl_media in model.Media.query(
+                                                ancestor=fol_tl.key,
+                                                projection=["location", "sequence"],
+                                            ).order(model.Media.sequence).filter(
+                                                    model.Media.active == True):
+                            if fol_tl_media.location:
+                                gps.append({
+                                    'lat': fol_tl_media.location.lat,
+                                    'lng': fol_tl_media.location.lon,
+                                })
+                        feed.append({
+                            'creator': fol.followed,
+                            'creation_date': fol_tl.creation_date,
+                            'title': fol_tl.title,
+                            'hash': fol_tl.key.urlsafe(),
+                            'isPublic': fol_tl.is_public,
+                            'positions': gps
+                        })
+
+                return jsonify(feed)
+            raise InvalidUsage('unable to obtain user')  # error message here
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
 api.add_resource(CreateUser, '/API/user/signup')
 api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
+api.add_resource(SearchUser, '/API/user/search/<string:username>')
 api.add_resource(LogoutUser, '/API/user/logout')
+api.add_resource(FollowToggle, '/API/user/relationship/toggle')
+api.add_resource(CreateFeed, '/API/user/relationship/feed')
+
 api.add_resource(CreateTimeline, '/API/timeline/create')
 api.add_resource(DeleteTimeline, '/API/timeline/delete')
 api.add_resource(MakeTimelinePublic, '/API/timeline/publish')
 api.add_resource(UpdateTimeline, '/API/timeline/update')
 api.add_resource(LoadTimeline, '/API/timeline/load/<string:timeline_hash>')
-api.add_resource(LoadTimelines, '/API/timelines/load')
+api.add_resource(
+    LoadTimelines,
+    '/API/timelines/load/',
+    '/API/timelines/load/<string:username>'
+)
+
 api.add_resource(GetBlobEntry, '/API/blob/action/<string:action>')
+
 api.add_resource(SearchPlace, '/API/place/search/<string:place>')
 api.add_resource(MatchPlace, '/API/place/neighbours/')
 

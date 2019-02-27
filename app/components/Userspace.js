@@ -15,6 +15,8 @@ class Userspace extends React.Component {
         super(props);
         this.state = {
             timelines: null,
+            status: 'LOADING',
+            redirect_home: false,
         };
     }
 
@@ -28,30 +30,75 @@ class Userspace extends React.Component {
         return result;
     }
 
-    downloadTimelines(){
-
-        if (!this.props.isAuth || !this.props.token) {
-            return;
-        }
-
+    followToggle(){
         this.setState({status: 'LOADING' });
-        let headers = {
-            "Content-Type": "application/json",
-            "Authorization": `Token ${this.props.token}`,
-        };
+        let isFollowing = this.state.isFollowing;
+        if(isFollowing !== undefined){
+            let headers = {"Content-Type": "application/json"};
+            if (this.props.token) {
+              headers["Authorization"] = `Token ${this.props.token}`;
+            }
 
-        return fetch("/API/timelines/load", {headers, })
+            let body = JSON.stringify({
+                'action': isFollowing ? 'UNFOLLOW' : 'FOLLOW',
+                'target': this.props.match.params.username
+            });
+            // updating new relationship
+            return fetch('/API/user/relationship/toggle', {headers, body, method: "POST"})
             .then(res => res.json())
             .then(this.handleErrors)
             .then(
                 (result) => {
                     this.setState({
                         status: 'LOADED',
-                        timelines: result,
+                        isFollowing: !isFollowing,
                     });
                 }
             ).catch((error) => {
-                this.setState({status: 'LOADED'});
+                this.setState({
+                    status: 'LOADED',
+                });
+                this.props.raiseError(error);
+        });
+        }
+    }
+
+    downloadTimelines(){
+        this.setState({status: 'LOADING' });
+        // NOTE: this.props.isAuth is passed by App component
+        // after fetch promise is returned.
+        let api_uri = "/API/timelines/load/";
+        if (!this.props.isAuth || !this.props.token && !this.props.match.params.username) {
+            this.setState({status: 'LOADED'});
+            return;
+        }
+
+        if(this.props.match.params.username)
+            api_uri += this.props.match.params.username;
+
+        let headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Token ${this.props.token}`,
+        };
+
+        return fetch(api_uri, {headers})
+            .then(res => res.json())
+            .then(this.handleErrors)
+            .then(
+                (result) => {
+                    this.setState({
+                        status: 'LOADED',
+                        timelines: result.timelines,
+                        isAdmin: result.is_admin,
+                        isFollowing: result.is_following,
+                        redirect_home: false,
+                    });
+                }
+            ).catch((error) => {
+                this.setState({
+                    status: 'LOADED',
+                    redirect_home: true
+                });
                 this.props.raiseError(error);
         });
 
@@ -83,10 +130,6 @@ class Userspace extends React.Component {
             this.props.raiseError(error);
         });
         setTimeout( () => {this.downloadTimelines();}, 1000);
-    }
-
-    instaShare(cover, caption){
-
     }
 
     makePublic(timeline_hash){
@@ -147,18 +190,24 @@ class Userspace extends React.Component {
                         <p className="card-text">created on {timeline.creation_date}</p>
                         <p className="font-italic">{timeline.isPublic ? 'public' : 'private: only you can watch this'}</p>
                         <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">VIEW</Link>
-                        <Share
-                            key={'share_' + timeline.hash}
-                            shortenURL={window.location.origin + '/timeline/' + timeline.hash}
-                            timeline={timeline}
-                            onMakePublic={this.makePublic.bind(this, timeline.hash)}
-                            onInsta={this.instaShare.bind(this)}
-                        />
-                        <Deleter
-                            key={'remove_' + timeline.hash}
-                            timeline={timeline}
-                            onClick={this.removeTimeline.bind(this, timeline.hash)}
-                        />
+                        {
+                            this.state.isAdmin
+                                ?
+                                <>
+                                    <Share
+                                        key={'share_' + timeline.hash}
+                                        shortenURL={window.location.origin + '/timeline/' + timeline.hash}
+                                        timeline={timeline}
+                                        onMakePublic={this.makePublic.bind(this, timeline.hash)}
+                                    />
+                                    <Deleter
+                                        key={'remove_' + timeline.hash}
+                                        timeline={timeline}
+                                        onClick={this.removeTimeline.bind(this, timeline.hash)}
+                                    />
+                                </>
+                                : null
+                        }
                     </div>
                 </div>
                 </FadeIn>
@@ -166,12 +215,41 @@ class Userspace extends React.Component {
         );
     }
 
-    render(){
-        const {timelines, status} = this.state;
+    renderHeader(){
+        if(this.state.isAdmin)
+            return (
+                <div className="jumbotron jumbotron-fluid">
+                    <div className="container">
+                        <h1 className="display-3">this is your profile</h1>
+                        <p className="lead">you can create timelines from the button below</p>
+                    </div>
+                </div>
+            );
+        else
+            return(
+                <div className="jumbotron jumbotron-fluid">
+                    <div className="container">
+                        <h1 className="display-3">profile of {this.props.match.params.username}</h1>
+                        <button
+                            type="button"
+                            className="btn btn-raised btn-primary"
+                            onClick={this.followToggle.bind(this)}>
+                            {this.state.isFollowing ? 'unfollow this user' : 'follow this user'}
+                        </button>
+                    </div>
+                </div>
+            );
+    }
 
-        // check is user has permissions for this page
-        if (!this.props.isAuth && status !== 'LOADING')
+    render(){
+        const {timelines, status, redirect_home} = this.state;
+
+        // prevent guests to open this page unless it is from another account
+        if (!this.props.isAuth && status !== 'LOADING' && !this.props.match.params.username)
             return <Redirect to="/login"/>;
+
+        if (redirect_home)
+            return <Redirect to="/"/>;
 
         switch(status){
 
@@ -184,12 +262,17 @@ class Userspace extends React.Component {
 
                 return(
                     <>
+                        { this.renderHeader() }
                         <div className="container-fluid">
                             <div className="row">
                                 {cards}
                             </div>
                         </div>
-                        <Adder onSave={this.createTimeline.bind(this)}/>
+                        {
+                            this.state.isAdmin
+                                ? <Adder onSave={this.createTimeline.bind(this)}/>
+                                : null
+                        }
                     </>
                 );
 

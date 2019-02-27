@@ -46,3 +46,10 @@ indexes:
   properties:
   - name: sequence
     direction: desc
+
+- kind: Timeline
+  ancestor: yes
+  properties:
+  - name: is_public
+  - name: creation_date
+    direction: desc
