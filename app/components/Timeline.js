@@ -83,6 +83,10 @@ class Timeline extends React.Component {
     }
 
     addItem(item){
+        if(!item.place_id) {
+            this.props.raiseError('please select a place from the suggestions!');
+            return;
+        }
         let {items, nextSeq, mediasource} = this.state;
         // variables according to the item status/type
         let localurl;
@@ -240,7 +244,9 @@ class Timeline extends React.Component {
 
     renderTimeline(){
         if(this.state.items.length > 0) {
-            let timeline = this.state.items.map((media, index) => this.componentFactory(media, index, this.state.isAdmin));
+            let timeline = this.state.items.map((media, index) =>
+                this.componentFactory(media, index, this.state.isAdmin));
+
             return(
                 <div className="container mb-5 timeline">
                     {timeline}
@@ -271,6 +277,7 @@ class Timeline extends React.Component {
                                         onSave={this.addItem.bind(this)}
                                         prev_place_id={this.state.prev_place_id}
                                         prev_place_name={this.state.prev_place_name}
+                                        raiseError={this.props.raiseError}
                                     />
                                     <Editor.Saver onClick={this.uploadFiles.bind(this)}/>
                                 </>

@@ -44,8 +44,16 @@ class Map extends React.Component {
         map.fitBounds(bounds);
 
         /* creating routes */
+        var lineSymbol = {
+          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
+        };
+
         var path = new google.maps.Polyline({
             path: coords,
+            icons: [{
+                icon: lineSymbol,
+                offset: '100%'
+            }],
             geodesic: true,
             strokeColor: '#a01c1c',
             strokeOpacity: 1.0,

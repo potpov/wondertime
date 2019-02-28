@@ -241,11 +241,15 @@ class CreateTimeline(Resource):
                 raise InvalidUsage('unable to obtain user')
             # escape of xss inputs
             title = str(utils.escape(args.title.strip()))
-            model.Timeline(
+            timeline = model.Timeline(
                 parent=user.key,
                 title=title,
-            ).put()
-            return {'success': 'timeline created'}
+            )
+            timeline.put()
+            return {
+                'message': 'timeline created',
+                'hash': timeline.key.urlsafe()
+            }
         except InvalidUsage as e:
             return {'error': e.args[0]}
 
@@ -612,6 +616,7 @@ class CreateFeed(Resource):
             return {'error': e.args[0]}
 
 
+""" USER APIs """
 api.add_resource(CreateUser, '/API/user/signup')
 api.add_resource(LoginUser, '/API/user/signin')
 api.add_resource(LoadUser, '/API/user/auth')
@@ -623,6 +628,8 @@ api.add_resource(UserDetails, '/API/user/details/')
 api.add_resource(FollowToggle, '/API/user/relationship/toggle')
 api.add_resource(CreateFeed, '/API/user/relationship/feed')
 
+
+""" TIMELINE APIs """
 api.add_resource(CreateTimeline, '/API/timeline/create')
 api.add_resource(DeleteTimeline, '/API/timeline/delete')
 api.add_resource(MakeTimelinePublic, '/API/timeline/publish')
@@ -634,8 +641,12 @@ api.add_resource(
     '/API/timelines/load/<string:username>'
 )
 
+
+""" BLOB APIs """
 api.add_resource(GetBlobEntry, '/API/blob/action/<string:action>')
 
+
+""" MAPS APIs """
 api.add_resource(SearchPlace, '/API/place/search/<string:place>')
 api.add_resource(MatchPlace, '/API/place/neighbours/')
 

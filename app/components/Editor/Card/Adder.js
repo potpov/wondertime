@@ -50,7 +50,9 @@ function Place(props){
                     onChange={props.onPlace}
                     id="place"
                     autoComplete="off"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                    data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
                     value={props.place}
                 />
 

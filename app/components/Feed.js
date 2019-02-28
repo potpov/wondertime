@@ -93,8 +93,10 @@ class Feed extends React.Component {
         const {timelines, status, redirect_home} = this.state;
 
         // prevent guests to open this page unless it is from another account
-        if (!this.props.isAuth && status !== 'LOADING' && !this.props.match.params.username)
+        if (!this.props.isAuth && status !== 'LOADING') {
+            this.props.raiseError('you dont have the permissione to access this page');
             return <Redirect to="/login"/>;
+        }
 
         if (redirect_home)
             return <Redirect to="/"/>;

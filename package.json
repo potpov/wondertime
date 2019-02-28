@@ -36,8 +36,12 @@
     "react-cookie": "^3.0.8",
     "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "^16.7.0",
+    "react-drag-sortable": "^1.0.6",
+    "react-draggable": "^3.2.0",
+    "react-draggable-component": "^6.0.0",
     "react-fade-in": "^0.1.6",
     "react-native-autocomplete-input": "^3.6.0",
-    "react-router-dom": "^4.3.1"
+    "react-router-dom": "^4.3.1",
+    "uninstall": "0.0.0"
   }
 }
