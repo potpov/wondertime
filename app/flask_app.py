@@ -11,8 +11,8 @@ from google.appengine.ext import blobstore
 from flask import request
 from werkzeug.http import parse_options_header
 import json
+import datetime
 from jinja2 import utils
-import re
 import requests
 from exceptions import InvalidUsage
 
@@ -351,10 +351,10 @@ class LoadTimeline(Resource):
                 for file_url in model.File.query(ancestor=media.key):
                     files.append('{}/{}'.format(flask_project_config.MEDIA_PUB_DIR, file_url.blob_url))
                 #  adding the media to the media response list
-                if media.location:
+                if media.lat and media.lon:
                     coords = {
-                        'lat': media.location.lat,
-                        'lng': media.location.lon,
+                        'lat': media.lat,
+                        'lng': media.lon,
                     }
                 else:
                     coords = {'lat': 'undefined', 'lng': 'undefined'}
@@ -436,9 +436,8 @@ class UpdateTimeline(Resource):
                         r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
                         place_details = r.json()
                         if place_details['status'] == 'OK':
-                            lat = place_details['result']['geometry']['location']['lat']
-                            lng = place_details['result']['geometry']['location']['lng']
-                            media.location = ndb.GeoPt(lat, lng)
+                            media.lat = place_details['result']['geometry']['location']['lat']
+                            media.lon = place_details['result']['geometry']['location']['lng']
                             media.place_name = str(card['place_name'])
                     media.put()
                     # saving all the uploads attached to this media
@@ -493,17 +492,17 @@ class LoadTimelines(Resource):
                     gps = []
                     medias = model.Media.query(
                         ancestor=timeline.key,
-                        projection=["location", "sequence"],
+                        projection=["lat", "lon", "sequence"],
                     ).order(model.Media.sequence).filter(model.Media.active == True)
 
                     for media in medias:
-                        if media.location:
+                        if media.lat and media.lon:
                             gps.append({
-                                'lat': media.location.lat,
-                                'lng': media.location.lon,
+                                'lat': media.lat,
+                                'lng': media.lon,
                             })
                     response.append({
-                        'creation_date': timeline.creation_date,
+                        'creation_date': datetime.datetime.strftime(timeline.creation_date, '%d/%m/%y'),
                         'title': timeline.title,
                         'hash': timeline.key.urlsafe(),
                         'isPublic': timeline.is_public,
@@ -558,13 +557,36 @@ class MatchPlace(Resource):
 
     def get(self):
         args = self.parser.parse_args()
-        lat = args.lat % 360
-        lon = args.lon % 360
-        uno = ndb.GeoPt(lat, lon)
-        due = ndb.GeoPt(50, 50)
-        due.ToXml()
-        # medias = model.Media.query()
-        return {'non funzionera mai': '{} {}'.format(due.lat, uno.lon)}
+        lat = float(args.lat % 360)
+        lon = float(args.lon % 360)
+
+        lat_medias = model.Media.query(
+            ndb.AND(
+                model.Media.lat < lat + 1,
+                model.Media.lat > lat - 1,
+            )
+        ).fetch(keys_only=True)
+
+        lon_medias = model.Media.query(
+            ndb.AND(
+                model.Media.lon > lon - 1,
+                model.Media.lon < lon + 1
+            )
+        ).fetch(keys_only=True)
+
+        # keys of cards in both lon/lat
+        results = ndb.get_multi(set(lon_medias).intersection(lat_medias))
+
+        response = []
+        for result in results:
+            timeline = result.key.parent().get()
+            response.append({
+                'title': timeline.title,
+            })
+        response = set(response)
+        return jsonify({
+            'non ci posso credere, la signorina del navigatoreee ': response
+        })
 
 
 class CreateFeed(Resource):

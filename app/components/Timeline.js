@@ -6,6 +6,7 @@ import * as Messages from "./Messages"
 
 import FadeIn from 'react-fade-in';
 
+
 /* this timeline handle timelines previews and editors */
 class Timeline extends React.Component {
 
@@ -34,6 +35,7 @@ class Timeline extends React.Component {
     }
 
     downloadTimeline(){
+        this.setState({status: 'LOADING'});
         let headers = {
           "Content-Type": "application/json",
         };

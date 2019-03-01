@@ -118,10 +118,9 @@ class Form extends React.Component {
             </>
         )
     }
+
     render() {
-
         return (
-
             <form className="form-inline">
                 <span className="bmd-form-group">
 
@@ -143,6 +142,7 @@ class Form extends React.Component {
                 </span>
             </form>
         );
+
     }
 }
 
