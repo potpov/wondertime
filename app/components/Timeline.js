@@ -142,7 +142,7 @@ class Timeline extends React.Component {
         */
         let old_items = {};
         let new_items = [];
-        let item_ref_list = [];
+        var item_ref_list = [];
         this.state.items.forEach(function(item, newkey){
             item_ref_list.push(item.key); // saving this key to filter unuseful media before sending
             if(item.value.new) {
@@ -171,11 +171,8 @@ class Timeline extends React.Component {
                         and clean the mediasource variable at the end
                      */
                     this.state.mediasource.forEach(function (file) {
-                        if(file.tmp_item_ref in item_ref_list)
+                        if(item_ref_list.indexOf(file.tmp_item_ref))
                             formdata.append(file.digest, file.file);
-                    });
-                    this.setState({
-                        mediasource: [],
                     });
 
                     request.open('POST', blobURL.url);
@@ -198,7 +195,7 @@ class Timeline extends React.Component {
                                 this.props.raiseError(request.statusText);
                             }
                         }
-                        this.setState({ status: 'LOADED'});
+                        this.setState({ status: 'LOADED', mediasource: []});
                     })
                 }
             );
@@ -268,6 +265,7 @@ class Timeline extends React.Component {
                 return undefined;
         }
     }
+
     // value is the component info in item
     // index is the key = sequence of the item
     Item ({value, index, onRemove, decorateHandle}) {
