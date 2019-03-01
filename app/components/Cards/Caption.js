@@ -20,7 +20,8 @@ class Caption extends React.Component {
 
     renderHeader(){
         return(
-            <div id={this.props.card_focus} className="card mt-5 w-50 mx-auto">
+            <div id={this.props.card_focus}
+                 className={"card  mt-5 w-50 mx-auto " + (this.props.editor ? 'admin' : '')}>
                 {this.Editor()}
                 {this.renderBody()}
             </div>

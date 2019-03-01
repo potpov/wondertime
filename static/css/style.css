@@ -12,6 +12,10 @@ h1 a, h1 a:hover{
     color: #03a9f4;
 }
 
+.card.admin, .carousel.admin{
+    cursor: grab;
+}
+
 .list-group-item.active{
     background-color:  #03a9f4 !important;
 }

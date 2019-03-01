@@ -79,7 +79,7 @@ class Feed extends React.Component {
                         <h5 className="card-title">{timeline.title}</h5>
                         <p className="card-text">created on {timeline.creation_date}</p>
                         <p className="font-italic">by
-                           <Link to={'/experience/' + timeline.creator}> {timeline.creator}</Link>
+                           <Link to={'/experiences/' + timeline.creator}> {timeline.creator}</Link>
                         </p>
                         <Link to={'/timeline/' + timeline.hash} className="btn btn-outline-info w-100 mb-1">VIEW</Link>
                     </div>

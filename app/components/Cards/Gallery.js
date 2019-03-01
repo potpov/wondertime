@@ -11,7 +11,7 @@ class Gallery extends React.Component {
 
     Carousel(){
         return this.props.urls.map((url, index) => {
-                let cls = (index === 0) ? 'carousel-item active' : 'carousel-item';
+                let cls = (index === 0) ? 'carousel-item active ' : 'carousel-item ';
                 return (
                     <div id={this.props.card_focus} key={index} className={cls}>
                         <img className="d-block w-100" src={url} alt="First slide"/>
@@ -25,7 +25,9 @@ class Gallery extends React.Component {
         return(
             <div className="card mt-5 w-50 mx-auto">
                 {this.Editor()}
-                <div id={this.props.sequence} className="carousel slide w-100" data-ride="carousel">
+                <div id={this.props.sequence}
+                     className={"carousel slide w-100 " + (this.props.editor ? 'admin' : '')}
+                     data-ride="carousel">
                     <div className="carousel-inner">
                         {this.Carousel()}
                     </div>

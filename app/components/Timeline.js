@@ -204,9 +204,7 @@ class Timeline extends React.Component {
             );
     }
 
-    // value is the component info in item
-    // index is the key = sequence of the item
-    Item ({value, index, onRemove, decorateHandle}) {
+    static componentFactory(value, index, onRemove){
         // creating a reference if user comes here by clicking on marker on userspace
         let card_focus = '';
         if(value.coords)
@@ -214,33 +212,33 @@ class Timeline extends React.Component {
 
         switch (value.type) {
             case 'video':
-                return decorateHandle(
+                return(
                     <div>
                         <Cards.Video
                             key={value.sequence}
                             url={value.url}
                             caption={value.caption}
                             card_focus={card_focus}
-                            editor={value.is_admin}>
+                            editor={value.admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Video>
                     </div>
                 );
             case 'picture':
-                return decorateHandle(
+                return(
                     <div>
                         <Cards.Picture
                             key={value.sequence}
                             url={value.url}
                             caption={value.caption}
                             card_focus={card_focus}
-                            editor={value.is_admin}>
+                            editor={value.admin}>
                              <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Picture>
                     </div>
                 );
             case 'gallery':
-                return decorateHandle(
+                return(
                     <div>
                         <Cards.Gallery
                             key={value.sequence}
@@ -248,20 +246,20 @@ class Timeline extends React.Component {
                             sequence={value.sequence}
                             caption={value.caption}
                             card_focus={card_focus}
-                            editor={value.is_admin}>
+                            editor={value.admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Gallery>
                     </div>
                 );
             case 'caption':
-                return decorateHandle(
+                return(
                     <div>
                         <Cards.Caption
                             key={value.sequence}
                             includeHeader
                             caption={value.caption}
                             card_focus={card_focus}
-                            editor={value.is_admin}>
+                            editor={value.admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Caption>
                     </div>
@@ -269,6 +267,15 @@ class Timeline extends React.Component {
             default:
                 return undefined;
         }
+    }
+    // value is the component info in item
+    // index is the key = sequence of the item
+    Item ({value, index, onRemove, decorateHandle}) {
+        if (value.admin) {
+            return decorateHandle(Timeline.componentFactory(value, index, onRemove));
+        }
+        else
+            return Timeline.componentFactory(value, index, onRemove)
     }
 
     render() {

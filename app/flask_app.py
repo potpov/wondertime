@@ -369,6 +369,7 @@ class LoadTimeline(Resource):
                         'caption': media.caption,
                         'coords': coords,
                         'url': files,
+                        'admin': is_admin,
                     }
                 })
 
@@ -628,13 +629,13 @@ class CreateFeed(Resource):
                         gps = []
                         for fol_tl_media in model.Media.query(
                                                 ancestor=fol_tl.key,
-                                                projection=["location", "sequence"],
+                                                projection=["lat", "lon", "sequence"],
                                             ).order(model.Media.sequence).filter(
                                                     model.Media.active == True):
-                            if fol_tl_media.location:
+                            if fol_tl_media.lat and fol_tl_media.lon:
                                 gps.append({
-                                    'lat': fol_tl_media.location.lat,
-                                    'lng': fol_tl_media.location.lon,
+                                    'lat': fol_tl_media.lat,
+                                    'lng': fol_tl_media.lon,
                                 })
                         feed.append({
                             'creator': fol.followed,
