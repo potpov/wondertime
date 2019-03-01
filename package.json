@@ -37,6 +37,7 @@
     "react-cookie": "^3.0.8",
     "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "^16.7.0",
+    "react-drag-sort": "^2.2.1",
     "react-drag-sortable": "^1.0.6",
     "react-draggable": "^3.2.0",
     "react-draggable-component": "^6.0.0",

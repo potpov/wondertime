@@ -17,6 +17,7 @@ import requests
 from exceptions import InvalidUsage
 
 webpack = Webpack()
+
 app = Flask(__name__)
 app.config.from_object(__name__)
 
@@ -360,11 +361,15 @@ class LoadTimeline(Resource):
                     coords = {'lat': 'undefined', 'lng': 'undefined'}
 
                 result.append({
-                    'sequence': media.sequence,
-                    'type': media.type,
-                    'caption': media.caption,
-                    'coords': coords,
-                    'url': files,
+                    'key': media.sequence,
+                    'value': {
+                        'hash': media.key.id(),
+                        'sequence': media.sequence,
+                        'type': media.type,
+                        'caption': media.caption,
+                        'coords': coords,
+                        'url': files,
+                    }
                 })
 
             if medias.count() > 0:
@@ -385,9 +390,9 @@ class UpdateTimeline(Resource):
 
     def __init__(self):
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('to_be_removed', required=True, type=json.loads)
         self.parser.add_argument('timeline_hash', type=str, required=True)
-        self.parser.add_argument('items_tree', required=True, type=json.loads)
+        self.parser.add_argument('old_items', required=True, type=json.loads)
+        self.parser.add_argument('new_items', required=True, type=json.loads)
         self.parser.add_argument('Authorization', type=str, location='headers', required=False)
 
     def post(self):
@@ -403,54 +408,61 @@ class UpdateTimeline(Resource):
                 raise InvalidUsage('unable to obtain user')
             if timeline.key.parent() != user.key:  # problems with permissions
                 raise InvalidUsage('you are not allowed to edit this timeline')
-            # ready to go. let's begin from the files to be deleted
-            if args.to_be_removed:
-                remove_these = model.Media.query(
-                    ancestor=timeline.key
-                ).filter(model.Media.sequence.IN(args.to_be_removed))
-                for remove_me in remove_these:
-                    remove_me.active = False
-                    remove_me.put()
-            # adding new elements
-            for card in args.items_tree:
-                if card['new']:
-                    # filtering all the inputs
-                    if not isinstance(card['sequence'], (int, long)):
-                        raise InvalidUsage('timeline partially updated. suspicious input detected.')
-                    if card['type'] not in ['picture', 'caption', 'video', 'gallery']:
-                        raise InvalidUsage('dont try to hack me plsss.')
-                    caption = utils.escape(card['caption'].encode('utf-8').strip())
-                    # skip empty captions
-                    if card['type'] == 'caption' and len(caption) == 0:
-                        continue
-                    # end of first controls
-                    media = model.Media(
-                        parent=timeline.key,
-                        sequence=card['sequence'],
-                        type=str(card['type']),
-                        caption=caption,
-                    )
-                    # asking google for coords if there are
-                    if card['place_id']:
-                        params = {'key': flask_project_config.MAPS_KEY, 'placeid': card['place_id']}
-                        r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
-                        place_details = r.json()
-                        if place_details['status'] == 'OK':
-                            media.lat = place_details['result']['geometry']['location']['lat']
-                            media.lon = place_details['result']['geometry']['location']['lng']
-                            media.place_name = str(card['place_name'])
+
+            # lets get all the media from this timeline
+            old_media = model.Media.query(ancestor=timeline.key)\
+                .filter(model.Media.active == True)
+            # check if in the old media received from client
+            # there's some which needs to be deleted or updated
+            # (new sequence is key)
+            for media in old_media:
+                if str(media.key.id()) in args.old_items.keys():
+                    if int(args.old_items[str(media.key.id())]) != media.sequence:
+                        media.sequence = int(args.old_items[str(media.key.id())])
+                        media.put()
+                else:  # no more occurrences, disable this media
+                    media.active = False
                     media.put()
-                    # saving all the uploads attached to this media
-                    if card['source']:
-                        for source in card['source']:
-                            f = request.files[source]
-                            header = f.headers['Content-Type']
-                            parsed_header = parse_options_header(header)
-                            blob_key = parsed_header[1]['blob-key']
-                            model.File(
-                                parent=media.key,
-                                blob_url=blobstore.BlobKey(blob_key)
-                            ).put()
+
+            # adding new elements
+            for card in args.new_items:
+                # filtering all the inputs
+                if not isinstance(card['sequence'], (int, long)):
+                    raise InvalidUsage('timeline partially updated. suspicious input detected.')
+                if card['type'] not in ['picture', 'caption', 'video', 'gallery']:
+                    raise InvalidUsage('dont try to hack me plsss.')
+                caption = utils.escape(card['caption'].encode('utf-8').strip())
+                # skip empty captions
+                if card['type'] == 'caption' and len(caption) == 0:
+                    continue
+                # end of first controls
+                media = model.Media(
+                    parent=timeline.key,
+                    sequence=card['sequence'],
+                    type=str(card['type']),
+                    caption=caption,
+                )
+                # asking google for coords if there are
+                if card['place_id']:
+                    params = {'key': flask_project_config.MAPS_KEY, 'placeid': card['place_id']}
+                    r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
+                    place_details = r.json()
+                    if place_details['status'] == 'OK':
+                        media.lat = place_details['result']['geometry']['location']['lat']
+                        media.lon = place_details['result']['geometry']['location']['lng']
+                        media.place_name = str(card['place_name'])
+                media.put()
+                # saving all the uploads attached to this media
+                if card['source']:
+                    for source in card['source']:
+                        f = request.files[source]
+                        header = f.headers['Content-Type']
+                        parsed_header = parse_options_header(header)
+                        blob_key = parsed_header[1]['blob-key']
+                        model.File(
+                            parent=media.key,
+                            blob_url=blobstore.BlobKey(blob_key)
+                        ).put()
             return {'message': 'timeline updated successfully'}
         except InvalidUsage as e:
             return {'error': e.args[0]}

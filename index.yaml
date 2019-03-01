@@ -21,14 +21,6 @@ indexes:
   ancestor: yes
   properties:
   - name: active
-  - name: sequence
-  - name: lat
-  - name: lon
-
-- kind: Media
-  ancestor: yes
-  properties:
-  - name: active
   - name: location
 
 - kind: Media
@@ -36,6 +28,14 @@ indexes:
   properties:
   - name: active
   - name: sequence
+
+- kind: Media
+  ancestor: yes
+  properties:
+  - name: active
+  - name: sequence
+  - name: lat
+  - name: lon
 
 - kind: Media
   ancestor: yes
