@@ -518,7 +518,8 @@ class LoadTimelines(Resource):
                         'title': timeline.title,
                         'hash': timeline.key.urlsafe(),
                         'isPublic': timeline.is_public,
-                        'positions': gps
+                        'positions': gps,
+                        'is_admin': is_admin
                     })
                 return jsonify({
                     'timelines': response,

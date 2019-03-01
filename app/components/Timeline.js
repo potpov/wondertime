@@ -63,27 +63,6 @@ class Timeline extends React.Component {
         this.setState({status: 'LOADED'});
     }
 
-    removeItem(i, seqNumber){
-        const items = this.state.items.slice();
-        const mediasource = this.state.mediasource.slice();
-        const toBeRemoved = this.state.toBeRemoved;
-        //if it is a new item just remove all the source from the mediasource to avoid unuseful uploads
-        if(items[i].new) {
-            if(items[i].type !== 'caption') { // captions have no sources attached!
-                items[i].source.forEach(function (link) {
-                    mediasource.splice(link, 1);
-                })
-            }
-        }
-        //if it has to be deleted from the server let's notice it
-        else {
-           toBeRemoved.push(seqNumber); //this is an unique id for the element on the server
-        }
-        //finally we remove the element from the render list
-        items.splice(i, 1);
-        this.setState({items: items, toBeRemoved: toBeRemoved, mediasource: mediasource})
-    }
-
     addItem(item){
         if(!item.place_id) {
             this.props.raiseError('please select a place from the suggestions!');
@@ -198,7 +177,7 @@ class Timeline extends React.Component {
                     this.setState({
                         mediasource: [],
                     });
-                    
+
                     request.open('POST', blobURL.url);
                     request.setRequestHeader("Authorization", "Token " + this.props.token);
                     // Send our FormData object; HTTP headers are set automatically
@@ -228,7 +207,11 @@ class Timeline extends React.Component {
     // value is the component info in item
     // index is the key = sequence of the item
     Item ({value, index, onRemove, decorateHandle}) {
-        let editor = true;
+        // creating a reference if user comes here by clicking on marker on userspace
+        let card_focus = '';
+        if(value.coords)
+            card_focus = '' + value.coords.lat + value.coords.lng;
+
         switch (value.type) {
             case 'video':
                 return decorateHandle(
@@ -237,7 +220,8 @@ class Timeline extends React.Component {
                             key={value.sequence}
                             url={value.url}
                             caption={value.caption}
-                            editor={editor}>
+                            card_focus={card_focus}
+                            editor={value.is_admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Video>
                     </div>
@@ -249,7 +233,8 @@ class Timeline extends React.Component {
                             key={value.sequence}
                             url={value.url}
                             caption={value.caption}
-                            editor={editor}>
+                            card_focus={card_focus}
+                            editor={value.is_admin}>
                              <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Picture>
                     </div>
@@ -262,7 +247,8 @@ class Timeline extends React.Component {
                             urls={value.url}
                             sequence={value.sequence}
                             caption={value.caption}
-                            editor={editor}>
+                            card_focus={card_focus}
+                            editor={value.is_admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Gallery>
                     </div>
@@ -274,7 +260,8 @@ class Timeline extends React.Component {
                             key={value.sequence}
                             includeHeader
                             caption={value.caption}
-                            editor={editor}>
+                            card_focus={card_focus}
+                            editor={value.is_admin}>
                             <Editor.Deleter onDelete={onRemove}/>
                         </Cards.Caption>
                     </div>
