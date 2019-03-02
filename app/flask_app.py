@@ -226,6 +226,55 @@ class FollowToggle(Resource):
             return {'error': e.args[0]}
 
 
+class CreateFeed(Resource):
+
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
+
+    def get(self):
+        try:
+            args = self.parser.parse_args()
+            token = args.Authorization.split(" ")[1]
+            # checking if the user is authenticated
+            user = model.User.load_user_by_token(token)
+            if isinstance(user, model.User):
+                response = []
+                followed = model.Followers.query(
+                    ancestor=user.key
+                )
+                feed = []
+                for fol in followed:
+                    for fol_tl in model.Timeline.query(
+                                    model.Timeline.is_public == True,
+                                    ancestor=ndb.Key(model.User, fol.followed),
+                                    ).order(-model.Timeline.creation_date).fetch(3):
+                        gps = []
+                        for fol_tl_media in model.Media.query(
+                                                ancestor=fol_tl.key,
+                                                projection=["lat", "lon", "sequence"],
+                                            ).order(model.Media.sequence).filter(
+                                                    model.Media.active == True):
+                            if fol_tl_media.lat and fol_tl_media.lon:
+                                gps.append({
+                                    'lat': fol_tl_media.lat,
+                                    'lng': fol_tl_media.lon,
+                                })
+                        feed.append({
+                            'creator': fol.followed,
+                            'creation_date': fol_tl.creation_date,
+                            'title': fol_tl.title,
+                            'hash': fol_tl.key.urlsafe(),
+                            'isPublic': fol_tl.is_public,
+                            'positions': gps
+                        })
+
+                return jsonify(feed)
+            raise InvalidUsage('unable to obtain user')  # error message here
+        except InvalidUsage as e:
+            return {'error': e.args[0]}
+
+
 class CreateTimeline(Resource):
 
     def __init__(self):
@@ -566,90 +615,59 @@ class SearchPlace(Resource):
 class MatchPlace(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('lon', type=int, required=True)
-        self.parser.add_argument('lat', type=int, required=True)
+        self.parser.add_argument('place_id', type=str, required=True)
 
     def get(self):
         args = self.parser.parse_args()
-        lat = float(args.lat % 360)
-        lon = float(args.lon % 360)
+        params = {'key': flask_project_config.MAPS_KEY, 'placeid': args.place_id}
+        r = requests.get('https://maps.googleapis.com/maps/api/place/details/json', params=params)
+        place_details = r.json()
+        if place_details['status'] == 'OK':
+            lat = place_details['result']['geometry']['location']['lat']
+            lon = place_details['result']['geometry']['location']['lng']
+            place_name = place_details['result']['address_components'][0]['long_name']
 
+        # searching in db
         lat_medias = model.Media.query(
             ndb.AND(
-                model.Media.lat < lat + 1,
-                model.Media.lat > lat - 1,
+                model.Media.lat < (lat + 1) % 360,
+                model.Media.lat > (lat - 1) % 360,
             )
-        ).fetch(keys_only=True)
+        ).filter(model.Media.active == True).fetch(keys_only=True)
 
         lon_medias = model.Media.query(
             ndb.AND(
-                model.Media.lon > lon - 1,
-                model.Media.lon < lon + 1
+                model.Media.lon > (lon - 1) % 360,
+                model.Media.lon < (lon + 1) % 360
             )
-        ).fetch(keys_only=True)
+        ).filter(model.Media.active == True).fetch(keys_only=True)
 
         # keys of cards in both lon/lat
-        results = ndb.get_multi(set(lon_medias).intersection(lat_medias))
+        results = set(lon_medias).intersection(lat_medias)
+        # get the cards, we will use this restricted set of results
+        # to check coords of the timelines, instead of query on the entire datastore again
+        cards = ndb.get_multi(results)
+        # get TL from cards and filter keeping distinct values
+        # there might be cards from the same  (using set as a filter)
+        timelines = ndb.get_multi(set([result.parent() for result in results]))
 
         response = []
-        for result in results:
-            timeline = result.key.parent().get()
+        for timeline in timelines:
             response.append({
+                'creator': str(timeline.key.parent().get().username),
+                'creation_date': timeline.creation_date,
                 'title': timeline.title,
+                'hash': timeline.key.urlsafe(),
+                'isPublic': timeline.is_public,
+                'positions': [{
+                    'lat': card.lat,
+                    'lng': card.lon,
+                    } for card in cards if card.key.parent().id() == timeline.key.id()]
             })
-        response = set(response)
         return jsonify({
-            'non ci posso credere, la signorina del navigatoreee ': response
+            'place_name': place_name,
+            'timelines': response
         })
-
-
-class CreateFeed(Resource):
-
-    def __init__(self):
-        self.parser = reqparse.RequestParser()
-        self.parser.add_argument('Authorization', type=str, location='headers', required=True)
-
-    def get(self):
-        try:
-            args = self.parser.parse_args()
-            token = args.Authorization.split(" ")[1]
-            # checking if the user is authenticated
-            user = model.User.load_user_by_token(token)
-            if isinstance(user, model.User):
-                response = []
-                followed = model.Followers.query(
-                    ancestor=user.key
-                )
-                feed = []
-                for fol in followed:
-                    for fol_tl in model.Timeline.query(
-                                    model.Timeline.is_public == True,
-                                    ancestor=ndb.Key(model.User, fol.followed),
-                                    ).order(-model.Timeline.creation_date).fetch(3):
-                        gps = []
-                        for fol_tl_media in model.Media.query(
-                                                ancestor=fol_tl.key,
-                                                projection=["lat", "lon", "sequence"],
-                                            ).order(model.Media.sequence).filter(
-                                                    model.Media.active == True):
-                            if fol_tl_media.lat and fol_tl_media.lon:
-                                gps.append({
-                                    'lat': fol_tl_media.lat,
-                                    'lng': fol_tl_media.lon,
-                                })
-                        feed.append({
-                            'creator': fol.followed,
-                            'creation_date': fol_tl.creation_date,
-                            'title': fol_tl.title,
-                            'hash': fol_tl.key.urlsafe(),
-                            'isPublic': fol_tl.is_public,
-                            'positions': gps
-                        })
-
-                return jsonify(feed)
-            raise InvalidUsage('unable to obtain user')  # error message here
-        except InvalidUsage as e:
-            return {'error': e.args[0]}
 
 
 """ USER APIs """

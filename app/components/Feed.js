@@ -1,9 +1,6 @@
 import React from 'react';
 import {Link, Redirect} from 'react-router-dom';
 
-import Adder from "./Editor/Timeline/Adder";
-import Deleter from "./Editor/Timeline/Deleter";
-import Share from "./Share";
 import * as Messages from "./Messages";
 
 import FadeIn from 'react-fade-in';
