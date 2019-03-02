@@ -109,6 +109,7 @@ class Timeline extends React.Component {
         items.push({
                 key: nextSeq,
                 value: {
+                    admin: true,
                     sequence: nextSeq,
                     type: item.status,
                     source: source, // link to real file stored in mediasource!
@@ -171,8 +172,12 @@ class Timeline extends React.Component {
                         and clean the mediasource variable at the end
                      */
                     this.state.mediasource.forEach(function (file) {
-                        if(item_ref_list.indexOf(file.tmp_item_ref))
+                        if (item_ref_list.indexOf(file.tmp_item_ref) > -1){
                             formdata.append(file.digest, file.file);
+                            console.log("TROVATO! " + file.tmp_item_ref + " in " + item_ref_list)
+                        }
+                        else
+                            console.log("non trovato " + file.tmp_item_ref +" in " + item_ref_list)
                     });
 
                     request.open('POST', blobURL.url);
