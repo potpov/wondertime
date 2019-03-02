@@ -9,7 +9,8 @@ class Settings extends React.Component {
         this.state = {
             status: 'LOADING',
             redirect_home: false,
-            password: ''
+            password: '',
+            confirm_password: ''
         };
     }
 
@@ -20,6 +21,12 @@ class Settings extends React.Component {
     updatePasswordValue(evt) {
         this.setState({
           password: evt.target.value
+        });
+    }
+
+    updateSecondPasswordValue(evt) {
+        this.setState({
+          confirm_password: evt.target.value
         });
     }
 
@@ -69,7 +76,10 @@ class Settings extends React.Component {
         if (this.props.token) {
           headers["Authorization"] = `Token ${this.props.token}`;
         }
-        let body = JSON.stringify({'password': this.state.password});
+        let body = JSON.stringify({
+            'password': this.state.password,
+            'confirm_password': this.state.confirm_password
+        });
 
         fetch("/API/user/update", {headers, body, method: "POST"})
             .then(res => res.json())
@@ -150,23 +160,31 @@ class Settings extends React.Component {
                                  data-parent="#accordionExample">
                                 <div className="card-body">
                                     you can change your password here <br/>
-                                    <form className="form-inline">
-                                        <span className="bmd-form-group">
-                                            <div className="dropdown">
-                                                <input
-                                                    className="form-control mr-sm-2"
-                                                    type="password"
-                                                    aria-label="password"
-                                                    value={this.state.password}
-                                                    onChange={this.updatePasswordValue.bind(this)}
-                                                />
-                                                <button
-                                                    className="btn btn-outline-info my-2 my-sm-0"
-                                                    onClick={this.changePassword.bind(this)}>change
-                                                </button>
-                                            </div>
-                                        </span>
-                                    </form>
+
+                                    <div className="form-group mt-3 w-50">
+                                        <label htmlFor="exampleInputPassword2" className="bmd-label-floating">Password</label>
+                                        <input
+                                            type="password"
+                                            className="form-control"
+                                            id="exampleInputPassword2"
+                                            value={this.state.password}
+                                            onChange={this.updatePasswordValue.bind(this)}
+                                        />
+                                    </div>
+                                    <div className="form-group mt-3 w-50">
+                                        <label htmlFor="exampleInputPassword1" className="bmd-label-floating">Password Confirm</label>
+                                        <input
+                                            type="password"
+                                            className="form-control"
+                                            id="exampleInputPassword1"
+                                            value={this.state.confirm_password}
+                                            onChange={this.updateSecondPasswordValue.bind(this)}
+                                        />
+                                    </div>
+                                    <button
+                                        className="btn btn-outline-info my-2 my-sm-0"
+                                        onClick={this.changePassword.bind(this)}>change
+                                    </button>
                                 </div>
                             </div>
                         </div>

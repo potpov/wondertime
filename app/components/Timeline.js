@@ -295,7 +295,7 @@ class Timeline extends React.Component {
                                     Component={this.Item}
                                 />
                             </div>
-                            : <Messages.Empty/>
+                            : <Messages.Empty admin={this.state.isAdmin}/>
                         }
 
                         {

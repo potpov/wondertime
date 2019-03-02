@@ -126,11 +126,14 @@ class UpdatePassword(Resource):
             help='auth token required to view this page'
         )
         self.parser.add_argument('password', type=str, required=True)
+        self.parser.add_argument('confirm_password', type=str, required=True)
 
     def post(self):
         try:
             args = self.parser.parse_args()
             token = args.Authorization.split(" ")[1]
+            if args.password != args.confirm_password:
+                raise InvalidUsage('passwords dont match!')
             user = model.User.load_user_by_token(token)
             user.change_password(args.password)
             return {'message': 'password updated.'}
