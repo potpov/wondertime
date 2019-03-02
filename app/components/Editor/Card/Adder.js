@@ -72,7 +72,9 @@ function Caption(props){
         <div className="form-group">
               <label htmlFor="caption" className="bmd-label-floating">comments about it?</label>
               <input
-                  type="text" className="form-control"
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
                   onChange={props.onCaption}
                   id="caption"
               />

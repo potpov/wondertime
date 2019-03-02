@@ -16,7 +16,7 @@ class Welcome extends React.Component {
                         <source src="/static/assets/homepage_bg.mp4" type="video/mp4"/>
                     </video>
                 </div>
-                <h1 className="mt-5 ml-3">there's a fancy world out there.<br/>
+                <h1 className="mt-5 ml-3 welcome-title">there's a fancy world out there.<br/>
                     <Link className="ml-5" to={'/login'}>> jump in</Link>
                 </h1>
             </>

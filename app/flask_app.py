@@ -647,15 +647,21 @@ class MatchPlace(Resource):
 
         # keys of cards in both lon/lat
         results = set(lon_medias).intersection(lat_medias)
-        # get the cards, we will use this restricted set of results
-        # to check coords of the timelines, instead of query on the entire datastore again
-        cards = ndb.get_multi(results)
         # get TL from cards and filter keeping distinct values
         # there might be cards from the same  (using set as a filter)
         timelines = ndb.get_multi(set([result.parent() for result in results]))
 
         response = []
         for timeline in timelines:
+            if not timeline.is_public:
+                continue
+            # cards for this timeline
+            cards = model.Media.query(
+                ancestor=timeline.key,
+                projection=["lat", "lon", "sequence"]).order(
+                model.Media.sequence
+            ).filter(model.Media.active == True)
+
             response.append({
                 'creator': str(timeline.key.parent().get().username),
                 'creation_date': timeline.creation_date,
