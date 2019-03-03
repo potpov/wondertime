@@ -96,6 +96,7 @@ class Timeline extends React.Component {
                 let digest = '_' + Math.random().toString(36).substr(2, 9);
                 source.push(digest);
                 mediasource.push({
+                        tmp_item_ref: nextSeq,
                         digest: digest,
                         file: item.file,
                     });
