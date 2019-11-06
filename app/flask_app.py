@@ -250,6 +250,7 @@ class CreateFeed(Resource):
                 for fol in followed:
                     for fol_tl in model.Timeline.query(
                                     model.Timeline.is_public == True,
+                                    model.Timeline.active == True,
                                     ancestor=ndb.Key(model.User, fol.followed),
                                     ).order(-model.Timeline.creation_date).fetch(3):
                         gps = []

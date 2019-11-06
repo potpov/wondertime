@@ -39,8 +39,9 @@ class About extends React.Component {
                                 datastore is made with google ndb.<br/>
                                 maps are loaded thanks to google maps APIs.<br/>
                                 guys... i love google.<br/>
-                                google if you can hear me, i love you.<br/>
-                                you're like the endearing uncle i never had.
+                                API backend with python,
+                                user interface made with React <br/>
+                                bundle made with webpack <br/>
                             </p>
                         </div>
                     </div>
