@@ -5,12 +5,12 @@ if appengine_config.GAE_DEV:
     DEBUG = True
 
 else:
-    SECRET_KEY = 'gawfub&/4Fy271274'
+    SECRET_KEY = 'your-secret-key'
     DEBUG = False
 
 MEDIA_PUB_DIR = '/media'
 CRYPT_LOG_ROUNDS = 13
-MAPS_KEY = 'AIzaSyA-M96Mu_l_YKqTXsE-9BzfI1wRJFntijE'
+MAPS_KEY = 'your-google-maps-API-here'
 
 
 app_params = {
